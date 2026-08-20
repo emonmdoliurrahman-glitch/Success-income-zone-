@@ -21,6 +21,7 @@ from telegram.ext import (
     filters,
 )
 
+
 # =========================================================
 # CONFIG
 # =========================================================
@@ -30,11 +31,24 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-ADMIN_ID = 7764329763
+# Render Environment Variable থেকে Admin ID নেবে
+# না থাকলে আপনার বর্তমান Admin ID ব্যবহার করবে
+try:
+    ADMIN_ID = int(os.getenv("ADMIN_ID", "7764329763"))
+except ValueError:
+    ADMIN_ID = 7764329763
 
 REFERRAL_PERCENT = 0.20
 
-PORT = int(os.getenv("PORT", "10000"))
+try:
+    PORT = int(os.getenv("PORT", "10000"))
+except ValueError:
+    PORT = 10000
+
+
+# =========================================================
+# LOGGING
+# =========================================================
 
 logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -57,102 +71,122 @@ def supabase_headers():
 
 
 def sb_get(table, params=None):
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}"
 
-    response = requests.get(
-        url,
-        headers=supabase_headers(),
-        params=params or {},
-        timeout=20,
-    )
-
-    if not response.ok:
-        logger.error(
-            "Supabase GET error %s: %s",
-            response.status_code,
-            response.text,
+        response = requests.get(
+            url,
+            headers=supabase_headers(),
+            params=params or {},
+            timeout=20,
         )
-        return []
 
-    return response.json()
+        if not response.ok:
+            logger.error(
+                "Supabase GET error %s: %s",
+                response.status_code,
+                response.text,
+            )
+            return []
+
+        return response.json()
+
+    except Exception:
+        logger.exception("Supabase GET exception")
+        return []
 
 
 def sb_post(table, data, return_representation=False):
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}"
 
-    headers = supabase_headers()
+        headers = supabase_headers()
 
-    if return_representation:
-        headers["Prefer"] = "return=representation"
+        if return_representation:
+            headers["Prefer"] = "return=representation"
 
-    response = requests.post(
-        url,
-        headers=headers,
-        json=data,
-        timeout=20,
-    )
-
-    if not response.ok:
-        logger.error(
-            "Supabase POST error %s: %s",
-            response.status_code,
-            response.text,
+        response = requests.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=20,
         )
+
+        if not response.ok:
+            logger.error(
+                "Supabase POST error %s: %s",
+                response.status_code,
+                response.text,
+            )
+            return None
+
+        if not response.text:
+            return []
+
+        return response.json()
+
+    except Exception:
+        logger.exception("Supabase POST exception")
         return None
-
-    if not response.text:
-        return []
-
-    return response.json()
 
 
 def sb_patch(table, params, data):
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}"
 
-    headers = supabase_headers()
-    headers["Prefer"] = "return=representation"
+        headers = supabase_headers()
+        headers["Prefer"] = "return=representation"
 
-    response = requests.patch(
-        url,
-        headers=headers,
-        params=params,
-        json=data,
-        timeout=20,
-    )
-
-    if not response.ok:
-        logger.error(
-            "Supabase PATCH error %s: %s",
-            response.status_code,
-            response.text,
+        response = requests.patch(
+            url,
+            headers=headers,
+            params=params,
+            json=data,
+            timeout=20,
         )
+
+        if not response.ok:
+            logger.error(
+                "Supabase PATCH error %s: %s",
+                response.status_code,
+                response.text,
+            )
+            return None
+
+        if not response.text:
+            return []
+
+        return response.json()
+
+    except Exception:
+        logger.exception("Supabase PATCH exception")
         return None
-
-    if not response.text:
-        return []
-
-    return response.json()
 
 
 def sb_delete(table, params):
-    url = f"{SUPABASE_URL}/rest/v1/{table}"
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/{table}"
 
-    response = requests.delete(
-        url,
-        headers=supabase_headers(),
-        params=params,
-        timeout=20,
-    )
-
-    if not response.ok:
-        logger.error(
-            "Supabase DELETE error %s: %s",
-            response.status_code,
-            response.text,
+        response = requests.delete(
+            url,
+            headers=supabase_headers(),
+            params=params,
+            timeout=20,
         )
-        return False
 
-    return True
+        if not response.ok:
+            logger.error(
+                "Supabase DELETE error %s: %s",
+                response.status_code,
+                response.text,
+            )
+            return False
+
+        return True
+
+    except Exception:
+        logger.exception("Supabase DELETE exception")
+        return False
 
 
 # =========================================================
@@ -165,7 +199,7 @@ class HealthHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header(
             "Content-Type",
-            "text/plain; charset=utf-8"
+            "text/plain; charset=utf-8",
         )
         self.end_headers()
 
@@ -173,28 +207,48 @@ class HealthHandler(BaseHTTPRequestHandler):
             b"Success Income Zone Bot is running!"
         )
 
+    def do_HEAD(self):
+        self.send_response(200)
+        self.send_header(
+            "Content-Type",
+            "text/plain; charset=utf-8",
+        )
+        self.end_headers()
+
     def log_message(self, format, *args):
         return
 
 
 def run_health_server():
 
+    server = None
+
     try:
+
         server = HTTPServer(
             ("0.0.0.0", PORT),
-            HealthHandler
+            HealthHandler,
         )
 
         logger.info(
-            f"Health server running on port {PORT}"
+            "Health server started on port %s",
+            PORT,
         )
 
         server.serve_forever()
 
-    except Exception as e:
-        logger.error(
-            f"Health server error: {e}"
-        )
+    except Exception:
+        logger.exception("Health server crashed")
+
+    finally:
+
+        if server:
+            try:
+                server.server_close()
+            except Exception:
+                pass
+
+        logger.info("Health server stopped")
 
 
 # =========================================================
@@ -210,13 +264,13 @@ def get_user(tg_user):
         {
             "id": f"eq.{uid}",
             "limit": "1",
-        }
+        },
     )
 
     if rows:
+
         user = rows[0]
 
-        # Update profile information
         updated = {
             "first_name": tg_user.first_name or "",
             "last_name": tg_user.last_name or "",
@@ -226,7 +280,7 @@ def get_user(tg_user):
         result = sb_patch(
             "bot_users",
             {"id": f"eq.{uid}"},
-            updated
+            updated,
         )
 
         if result:
@@ -250,7 +304,7 @@ def get_user(tg_user):
     result = sb_post(
         "bot_users",
         data,
-        return_representation=True
+        return_representation=True,
     )
 
     if result:
@@ -266,7 +320,7 @@ def get_user_by_id(user_id):
         {
             "id": f"eq.{user_id}",
             "limit": "1",
-        }
+        },
     )
 
     return rows[0] if rows else None
@@ -277,7 +331,7 @@ def update_user(user_id, data):
     return sb_patch(
         "bot_users",
         {"id": f"eq.{user_id}"},
-        data
+        data,
     )
 
 
@@ -287,7 +341,7 @@ def get_tasks():
         "tasks",
         {
             "order": "id.asc",
-        }
+        },
     )
 
 
@@ -298,7 +352,7 @@ def get_task(task_id):
         {
             "id": f"eq.{task_id}",
             "limit": "1",
-        }
+        },
     )
 
     return rows[0] if rows else None
@@ -311,7 +365,7 @@ def get_submission(submission_id):
         {
             "id": f"eq.{submission_id}",
             "limit": "1",
-        }
+        },
     )
 
     return rows[0] if rows else None
@@ -332,7 +386,7 @@ def main_keyboard():
 
     return ReplyKeyboardMarkup(
         keyboard,
-        resize_keyboard=True
+        resize_keyboard=True,
     )
 
 
@@ -342,43 +396,43 @@ def admin_keyboard():
         [
             InlineKeyboardButton(
                 "➕ Add Task",
-                callback_data="admin_add_task"
+                callback_data="admin_add_task",
             ),
             InlineKeyboardButton(
                 "📋 All Tasks",
-                callback_data="admin_all_tasks"
+                callback_data="admin_all_tasks",
             ),
         ],
         [
             InlineKeyboardButton(
                 "🗑 Delete Task",
-                callback_data="admin_delete_task"
+                callback_data="admin_delete_task",
             ),
             InlineKeyboardButton(
                 "👥 Users",
-                callback_data="admin_users"
+                callback_data="admin_users",
             ),
         ],
         [
             InlineKeyboardButton(
                 "📥 Pending Tasks",
-                callback_data="admin_pending"
+                callback_data="admin_pending",
             ),
         ],
         [
             InlineKeyboardButton(
                 "💰 Add Balance",
-                callback_data="admin_add_balance"
+                callback_data="admin_add_balance",
             ),
             InlineKeyboardButton(
                 "➖ Remove Balance",
-                callback_data="admin_remove_balance"
+                callback_data="admin_remove_balance",
             ),
         ],
         [
             InlineKeyboardButton(
                 "📤 Withdrawals",
-                callback_data="admin_withdrawals"
+                callback_data="admin_withdrawals",
             ),
         ],
     ]
@@ -392,10 +446,13 @@ def admin_keyboard():
 
 async def start(update, context):
 
+    if not update.effective_user:
+        return
+
     tg_user = update.effective_user
+
     user = get_user(tg_user)
 
-    # Referral
     if context.args:
 
         referral_id = context.args[0]
@@ -423,16 +480,18 @@ async def start(update, context):
                             {
                                 "referred_by":
                                     referral_id
-                            }
+                            },
                         )
 
-    await update.message.reply_text(
-        "👋 Welcome to Success Income Zone!\n\n"
-        "💰 Complete tasks and earn BDT.\n"
-        "👥 Refer friends and earn 20% commission.\n\n"
-        "👇 Select an option:",
-        reply_markup=main_keyboard()
-    )
+    if update.message:
+
+        await update.message.reply_text(
+            "👋 Welcome to Success Income Zone!\n\n"
+            "💰 Complete tasks and earn BDT.\n"
+            "👥 Refer friends and earn 20% commission.\n\n"
+            "👇 Select an option:",
+            reply_markup=main_keyboard(),
+        )
 
 
 # =========================================================
@@ -473,14 +532,13 @@ async def profile(update, context):
         else "No username"
     )
 
-    # Count referrals
     referral_rows = sb_get(
         "bot_users",
         {
             "referred_by":
                 f"eq.{user['id']}",
             "select": "id",
-        }
+        },
     )
 
     referral_count = len(
@@ -526,7 +584,7 @@ async def referrals(update, context):
             "referred_by":
                 f"eq.{user['id']}",
             "select": "id",
-        }
+        },
     )
 
     link = (
@@ -574,9 +632,6 @@ async def show_tasks(update, context):
 
     for task in tasks:
 
-        task_id = str(task["id"])
-
-        # Check already approved submission
         completed = sb_get(
             "submissions",
             {
@@ -588,7 +643,7 @@ async def show_tasks(update, context):
                     "eq.approved",
                 "select": "id",
                 "limit": "1",
-            }
+            },
         )
 
         if completed:
@@ -599,13 +654,11 @@ async def show_tasks(update, context):
         )
 
         keyboard.append([
-
             InlineKeyboardButton(
                 f"{task['title']} ({reward:.2f} BDT)",
                 callback_data=
-                f"select_task_{task_id}"
+                f"select_task_{task['id']}",
             )
-
         ])
 
     if not keyboard:
@@ -621,7 +674,7 @@ async def show_tasks(update, context):
         "📋 Tasks\n\n"
         "👇 Please select a task:",
         reply_markup=
-        InlineKeyboardMarkup(keyboard)
+        InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -636,7 +689,7 @@ async def select_task(update, context):
 
     task_id = query.data.replace(
         "select_task_",
-        ""
+        "",
     )
 
     task = get_task(task_id)
@@ -655,37 +708,29 @@ async def select_task(update, context):
 
     review_hours = task.get(
         "review_hours",
-        0
+        0,
     )
 
     text = (
-
         f"📋 Task: {task['title']}\n\n"
-
-        f"💰 Reward: "
-        f"{reward:.2f} BDT\n\n"
-
-        f"⏳ Review time: "
-        f"{review_hours} hours\n\n"
-
+        f"💰 Reward: {reward:.2f} BDT\n\n"
+        f"⏳ Review time: {review_hours} hours\n\n"
         "📄 Please complete the task and "
         "then submit your Facebook UID and report."
     )
 
     keyboard = [[
-
         InlineKeyboardButton(
             "▶️ Start",
             callback_data=
-            f"start_task_{task_id}"
+            f"start_task_{task_id}",
         )
-
     ]]
 
     await query.message.reply_text(
         text,
         reply_markup=
-        InlineKeyboardMarkup(keyboard)
+        InlineKeyboardMarkup(keyboard),
     )
 
 
@@ -704,7 +749,7 @@ async def start_task(update, context):
 
     task_id = query.data.replace(
         "start_task_",
-        ""
+        "",
     )
 
     task = get_task(task_id)
@@ -717,7 +762,6 @@ async def start_task(update, context):
 
         return
 
-    # Pending submission check
     pending = sb_get(
         "submissions",
         {
@@ -729,7 +773,7 @@ async def start_task(update, context):
                 "eq.pending",
             "select": "id",
             "limit": "1",
-        }
+        },
     )
 
     if pending:
@@ -741,13 +785,8 @@ async def start_task(update, context):
 
         return
 
-    context.user_data[
-        "task_id"
-    ] = task_id
-
-    context.user_data[
-        "task_step"
-    ] = "uid"
+    context.user_data["task_id"] = task_id
+    context.user_data["task_step"] = "uid"
 
     await query.message.reply_text(
         "🚀 Task Started!\n\n"
@@ -806,7 +845,6 @@ async def confirm_submission(update, context):
         query.from_user
     )
 
-    # Check duplicate Facebook UID
     existing_uid = sb_get(
         "submissions",
         {
@@ -816,7 +854,7 @@ async def confirm_submission(update, context):
                 "id,status",
             "limit":
                 "1",
-        }
+        },
     )
 
     if existing_uid:
@@ -828,7 +866,6 @@ async def confirm_submission(update, context):
         return
 
     data = {
-
         "user_id":
             user["id"],
 
@@ -854,7 +891,7 @@ async def confirm_submission(update, context):
     result = sb_post(
         "submissions",
         data,
-        return_representation=True
+        return_representation=True,
     )
 
     if not result:
@@ -870,69 +907,46 @@ async def confirm_submission(update, context):
     context.user_data.clear()
 
     await query.message.reply_text(
-
         "✅ Your report has been received!\n\n"
         "⏳ Task Pending Review"
     )
 
-    # Notify Admin
     try:
 
         await context.bot.send_message(
-
             chat_id=ADMIN_ID,
 
             text=(
-
                 "📥 NEW TASK SUBMISSION\n\n"
-
-                f"🆔 Submission: "
-                f"{submission['id']}\n"
-
-                f"👤 User ID: "
-                f"{user['id']}\n"
-
-                f"👤 Username: "
-                f"@{user.get('username') or 'None'}\n\n"
-
-                f"📋 Task: "
-                f"{task['title']}\n"
-
-                f"💰 Reward: "
-                f"{float(task['reward']):.2f} BDT\n\n"
-
-                f"🆔 Facebook UID: "
-                f"{uid_value}\n\n"
-
-                f"📄 Report:\n"
-                f"{report}"
+                f"🆔 Submission: {submission['id']}\n"
+                f"👤 User ID: {user['id']}\n"
+                f"👤 Username: @{user.get('username') or 'None'}\n\n"
+                f"📋 Task: {task['title']}\n"
+                f"💰 Reward: {float(task['reward']):.2f} BDT\n\n"
+                f"🆔 Facebook UID: {uid_value}\n\n"
+                f"📄 Report:\n{report}"
             ),
 
             reply_markup=
             InlineKeyboardMarkup([
-
                 [
-
                     InlineKeyboardButton(
                         "✅ Approve",
                         callback_data=
-                        f"approve_{submission['id']}"
+                        f"approve_{submission['id']}",
                     ),
-
                     InlineKeyboardButton(
                         "❌ Reject",
                         callback_data=
-                        f"reject_{submission['id']}"
-                    )
-
+                        f"reject_{submission['id']}",
+                    ),
                 ]
-            ])
+            ]),
         )
 
-    except Exception as e:
-
-        logger.error(
-            f"Admin notification error: {e}"
+    except Exception:
+        logger.exception(
+            "Admin notification error"
         )
 
 
@@ -957,7 +971,7 @@ async def review_submission(update, context):
 
         submission_id = query.data.replace(
             "approve_",
-            ""
+            "",
         )
 
         action = "approved"
@@ -966,7 +980,7 @@ async def review_submission(update, context):
 
         submission_id = query.data.replace(
             "reject_",
-            ""
+            "",
         )
 
         action = "rejected"
@@ -997,7 +1011,6 @@ async def review_submission(update, context):
         submission.get("reward", 0)
     )
 
-    # Update submission
     updated = sb_patch(
         "submissions",
         {
@@ -1013,7 +1026,7 @@ async def review_submission(update, context):
 
             "reviewed_by":
                 ADMIN_ID,
-        }
+        },
     )
 
     if not updated:
@@ -1023,10 +1036,6 @@ async def review_submission(update, context):
         )
 
         return
-
-    # =====================================================
-    # APPROVED
-    # =====================================================
 
     if action == "approved":
 
@@ -1055,10 +1064,9 @@ async def review_submission(update, context):
             {
                 "balance":
                     new_balance
-            }
+            },
         )
 
-        # Referral commission
         referrer_id = user.get(
             "referred_by"
         )
@@ -1081,14 +1089,14 @@ async def review_submission(update, context):
                 ref_balance = float(
                     referrer.get(
                         "balance",
-                        0
+                        0,
                     )
                 )
 
                 ref_earnings = float(
                     referrer.get(
                         "referral_earnings",
-                        0
+                        0,
                     )
                 )
 
@@ -1102,15 +1110,14 @@ async def review_submission(update, context):
                         "referral_earnings":
                             ref_earnings +
                             commission,
-                    }
+                    },
                 )
 
         await query.message.reply_text(
 
             "✅ TASK APPROVED\n\n"
 
-            f"👤 User ID: "
-            f"{user_id}\n"
+            f"👤 User ID: {user_id}\n"
 
             f"💰 Reward Added: "
             f"{reward:.2f} BDT"
@@ -1138,16 +1145,13 @@ async def review_submission(update, context):
 
                     f"💵 Your Balance: "
                     f"{float(final_user.get('balance', 0)):.2f} BDT"
-                )
+                ),
             )
 
-        except Exception as e:
-
-            logger.error(e)
-
-    # =====================================================
-    # REJECTED
-    # =====================================================
+        except Exception:
+            logger.exception(
+                "User approval notification error"
+            )
 
     else:
 
@@ -1173,12 +1177,13 @@ async def review_submission(update, context):
                     f"{submission.get('task_id')}\n\n"
 
                     "💰 No reward was added."
-                )
+                ),
             )
 
-        except Exception as e:
-
-            logger.error(e)
+        except Exception:
+            logger.exception(
+                "User rejection notification error"
+            )
 
 
 # =========================================================
@@ -1200,7 +1205,7 @@ async def admin_command(update, context):
         "👨‍💻 ADMIN PANEL\n\n"
         "👇 Select an option:",
 
-        reply_markup=admin_keyboard()
+        reply_markup=admin_keyboard(),
     )
 
 
@@ -1255,11 +1260,11 @@ async def admin_callback(update, context):
         for task in task_list:
 
             text += (
-
                 f"🆔 Task ID: {task['id']}\n"
                 f"📌 {task['title']}\n"
                 f"💰 {float(task['reward']):.2f} BDT\n"
-                f"⏳ Review: {task.get('review_hours', 0)} hours\n\n"
+                f"⏳ Review: "
+                f"{task.get('review_hours', 0)} hours\n\n"
             )
 
         await query.message.reply_text(
@@ -1311,7 +1316,7 @@ async def admin_callback(update, context):
                     "eq.pending",
                 "order":
                     "id.asc",
-            }
+            },
         )
 
         if not pending:
@@ -1329,14 +1334,14 @@ async def admin_callback(update, context):
                 InlineKeyboardButton(
                     "✅ Approve",
                     callback_data=
-                    f"approve_{s['id']}"
+                    f"approve_{s['id']}",
                 ),
 
                 InlineKeyboardButton(
                     "❌ Reject",
                     callback_data=
-                    f"reject_{s['id']}"
-                )
+                    f"reject_{s['id']}",
+                ),
 
             ]]
 
@@ -1354,7 +1359,7 @@ async def admin_callback(update, context):
                 f"{s['written_report']}",
 
                 reply_markup=
-                InlineKeyboardMarkup(keyboard)
+                InlineKeyboardMarkup(keyboard),
             )
 
         return
@@ -1367,7 +1372,7 @@ async def admin_callback(update, context):
             {
                 "select":
                     "id",
-            }
+            },
         )
 
         await query.message.reply_text(
@@ -1427,7 +1432,7 @@ async def admin_callback(update, context):
                     "eq.pending",
                 "order":
                     "id.asc",
-            }
+            },
         )
 
         if not pending:
@@ -1443,11 +1448,12 @@ async def admin_callback(update, context):
         for w in pending:
 
             text += (
-
                 f"🆔 {w['id']}\n"
                 f"👤 User: {w['user_id']}\n"
-                f"💰 Amount: {float(w['amount']):.2f} BDT\n"
-                f"💳 Method: {w.get('method', 'Pending')}\n\n"
+                f"💰 Amount: "
+                f"{float(w['amount']):.2f} BDT\n"
+                f"💳 Method: "
+                f"{w.get('method', 'Pending')}\n\n"
             )
 
         await query.message.reply_text(
@@ -1578,9 +1584,6 @@ async def process_admin_text(update, context):
     # REPORT
     if state == "task_report":
 
-        # আপনার tasks table-এ description/report_instruction
-        # column নেই, তাই শুধু প্রয়োজনীয় 4টি column insert করছি।
-
         data = {
             "title":
                 context.user_data[
@@ -1601,7 +1604,7 @@ async def process_admin_text(update, context):
         result = sb_post(
             "tasks",
             data,
-            return_representation=True
+            return_representation=True,
         )
 
         if not result:
@@ -1636,6 +1639,7 @@ async def process_admin_text(update, context):
 
         try:
             task_id = int(text)
+
         except ValueError:
 
             await update.message.reply_text(
@@ -1654,13 +1658,12 @@ async def process_admin_text(update, context):
 
             return True
 
-        # Delete task
         success = sb_delete(
             "tasks",
             {
                 "id":
                     f"eq.{task_id}"
-            }
+            },
         )
 
         if not success:
@@ -1689,7 +1692,7 @@ async def process_admin_text(update, context):
 
             user_id, amount = text.split(
                 "|",
-                1
+                1,
             )
 
             user_id = int(
@@ -1723,7 +1726,7 @@ async def process_admin_text(update, context):
                 {
                     "balance":
                         new_balance
-                }
+                },
             )
 
             context.user_data.clear()
@@ -1760,7 +1763,7 @@ async def process_admin_text(update, context):
 
             user_id, amount = text.split(
                 "|",
-                1
+                1,
             )
 
             user_id = int(
@@ -1787,7 +1790,7 @@ async def process_admin_text(update, context):
 
             new_balance = max(
                 0,
-                current - amount
+                current - amount,
             )
 
             update_user(
@@ -1795,7 +1798,7 @@ async def process_admin_text(update, context):
                 {
                     "balance":
                         new_balance
-                }
+                },
             )
 
             context.user_data.clear()
@@ -1885,18 +1888,14 @@ async def process_task_text(update, context):
 
             reply_markup=
             InlineKeyboardMarkup([
-
                 [
-
                     InlineKeyboardButton(
                         "✅ Submit",
                         callback_data=
-                        "confirm_submission"
+                        "confirm_submission",
                     )
-
                 ]
-
-            ])
+            ]),
         )
 
         return True
@@ -1994,21 +1993,27 @@ async def process_withdraw(update, context):
 
         return True
 
-    # Deduct balance when withdrawal is requested
     new_balance = (
         balance_value - amount
     )
 
-    update_user(
+    updated = update_user(
         user["id"],
         {
             "balance":
                 new_balance
-        }
+        },
     )
 
-    data = {
+    if updated is None:
 
+        await update.message.reply_text(
+            "❌ Balance update failed."
+        )
+
+        return True
+
+    data = {
         "user_id":
             user["id"],
 
@@ -2028,18 +2033,17 @@ async def process_withdraw(update, context):
     result = sb_post(
         "withdrawals",
         data,
-        return_representation=True
+        return_representation=True,
     )
 
     if not result:
 
-        # Restore balance if withdrawal failed
         update_user(
             user["id"],
             {
                 "balance":
                     balance_value
-            }
+            },
         )
 
         await update.message.reply_text(
@@ -2065,7 +2069,6 @@ async def process_withdraw(update, context):
         "⏳ Please wait for Admin review."
     )
 
-    # Notify admin
     try:
 
         await context.bot.send_message(
@@ -2086,12 +2089,13 @@ async def process_withdraw(update, context):
                 f"{amount:.2f} BDT\n"
 
                 f"💳 Method: Pending"
-            )
+            ),
         )
 
-    except Exception as e:
-
-        logger.error(e)
+    except Exception:
+        logger.exception(
+            "Withdrawal admin notification error"
+        )
 
     return True
 
@@ -2111,7 +2115,7 @@ async def top_users(update, context):
                 "balance.desc",
             "limit":
                 "10",
-        }
+        },
     )
 
     if not users:
@@ -2126,14 +2130,12 @@ async def top_users(update, context):
 
     for i, user in enumerate(
         users,
-        1
+        1,
     ):
 
         text += (
-
             f"{i}. "
             f"{user.get('first_name') or 'User'}\n"
-
             f"💰 "
             f"{float(user.get('balance', 0)):.2f} BDT\n\n"
         )
@@ -2162,12 +2164,15 @@ async def language(update, context):
 
 async def text_handler(update, context):
 
+    if not update.effective_user:
+        return
+
     # Admin processing
     if update.effective_user.id == ADMIN_ID:
 
         if await process_admin_text(
             update,
-            context
+            context,
         ):
 
             return
@@ -2175,7 +2180,7 @@ async def text_handler(update, context):
     # Task processing
     if await process_task_text(
         update,
-        context
+        context,
     ):
 
         return
@@ -2183,9 +2188,12 @@ async def text_handler(update, context):
     # Withdraw processing
     if await process_withdraw(
         update,
-        context
+        context,
     ):
 
+        return
+
+    if not update.message or not update.message.text:
         return
 
     text = update.message.text
@@ -2222,19 +2230,26 @@ async def text_handler(update, context):
 
         await update.message.reply_text(
             "❓ Please select an option.",
-            reply_markup=main_keyboard()
+            reply_markup=main_keyboard(),
         )
 
 
 # =========================================================
-# ERROR
+# ERROR HANDLER
 # =========================================================
 
 async def error_handler(update, context):
 
+    error = context.error
+
     logger.error(
-        "Telegram error:",
-        exc_info=context.error
+        "Telegram handler error: %r",
+        error,
+        exc_info=(
+            type(error),
+            error,
+            error.__traceback__,
+        ) if error else None,
     )
 
 
@@ -2244,6 +2259,11 @@ async def error_handler(update, context):
 
 def main():
 
+    logger.info("=" * 60)
+    logger.info("Starting Success Income Zone Bot")
+    logger.info("=" * 60)
+
+    # Environment check
     if not BOT_TOKEN:
 
         logger.error(
@@ -2268,10 +2288,39 @@ def main():
 
         return
 
-    threading.Thread(
+    logger.info(
+        "Environment variables loaded successfully"
+    )
+
+    logger.info(
+        "Admin ID: %s",
+        ADMIN_ID,
+    )
+
+    logger.info(
+        "Port: %s",
+        PORT,
+    )
+
+    # -----------------------------------------------------
+    # Render health server
+    # -----------------------------------------------------
+
+    health_thread = threading.Thread(
         target=run_health_server,
-        daemon=True
-    ).start()
+        name="health-server",
+        daemon=True,
+    )
+
+    health_thread.start()
+
+    logger.info(
+        "Health server thread started"
+    )
+
+    # -----------------------------------------------------
+    # Telegram Application
+    # -----------------------------------------------------
 
     application = (
         Application.builder()
@@ -2279,85 +2328,153 @@ def main():
         .build()
     )
 
+    # -----------------------------------------------------
     # Commands
+    # -----------------------------------------------------
+
     application.add_handler(
         CommandHandler(
             "start",
-            start
+            start,
         )
     )
 
     application.add_handler(
         CommandHandler(
             "admin",
-            admin_command
+            admin_command,
         )
     )
 
-    # Task
+    # -----------------------------------------------------
+    # Task callbacks
+    # -----------------------------------------------------
+
     application.add_handler(
         CallbackQueryHandler(
             select_task,
-            pattern=r"^select_task_"
+            pattern=r"^select_task_",
         )
     )
 
     application.add_handler(
         CallbackQueryHandler(
             start_task,
-            pattern=r"^start_task_"
+            pattern=r"^start_task_",
         )
     )
 
     application.add_handler(
         CallbackQueryHandler(
             confirm_submission,
-            pattern=r"^confirm_submission$"
+            pattern=r"^confirm_submission$",
         )
     )
 
-    # Admin
+    # -----------------------------------------------------
+    # Admin callbacks
+    # -----------------------------------------------------
+
     application.add_handler(
         CallbackQueryHandler(
             admin_callback,
-            pattern=r"^admin_"
+            pattern=r"^admin_",
         )
     )
 
+    # -----------------------------------------------------
     # Approve / Reject
+    # -----------------------------------------------------
+
     application.add_handler(
         CallbackQueryHandler(
             review_submission,
-            pattern=r"^(approve_|reject_)"
+            pattern=r"^(approve_|reject_)",
         )
     )
 
+    # -----------------------------------------------------
     # Text
+    # -----------------------------------------------------
+
     application.add_handler(
         MessageHandler(
-            filters.TEXT
-            & ~filters.COMMAND,
-            text_handler
+            filters.TEXT & ~filters.COMMAND,
+            text_handler,
         )
     )
+
+    # -----------------------------------------------------
+    # Error handler
+    # -----------------------------------------------------
 
     application.add_error_handler(
         error_handler
     )
 
     logger.info(
-        "Success Income Zone Bot is running..."
+        "All Telegram handlers registered"
     )
 
     logger.info(
-        f"Admin ID: {ADMIN_ID}"
+        "Starting Telegram polling..."
     )
 
-    application.run_polling(
-        allowed_updates=Update.ALL_TYPES,
-        drop_pending_updates=True
-    )
+    # -----------------------------------------------------
+    # POLLING
+    # -----------------------------------------------------
 
+    try:
+
+        application.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True,
+            close_loop=False,
+        )
+
+        logger.warning(
+            "⚠️ application.run_polling() returned normally."
+        )
+
+    except KeyboardInterrupt:
+
+        logger.info(
+            "KeyboardInterrupt received."
+        )
+
+    except Exception:
+
+        logger.exception(
+            "❌ Bot crashed with exception."
+        )
+
+    finally:
+
+        logger.info(
+            "=" * 60
+        )
+
+        logger.info(
+            "Bot process is shutting down."
+        )
+
+        logger.info(
+            "=" * 60
+        )
+
+
+# =========================================================
+# ENTRY POINT
+# =========================================================
 
 if __name__ == "__main__":
-    main()
+
+    try:
+
+        main()
+
+    except Exception:
+
+        logger.exception(
+            "❌ Fatal error in main process."
+        )
