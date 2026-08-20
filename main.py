@@ -17,7 +17,7 @@ from telegram.ext import (
 # CONFIG
 # =========================================================
 
-BOT_TOKEN = os.getenv("8393226821:AAHmspHI9QwHZzyh81WGg14uz3C7GrBxH9g")
+BOT_TOKEN = os.getenvBOT_TOKEN = os.getenv("BOT_TOKEN","8393226821:AAHmspHI9QwHZzyh81WGg14uz3C7GrBxH9g")
 ADMIN_ID = 7764329763
 
 REFERRAL_PERCENT = 0.20
