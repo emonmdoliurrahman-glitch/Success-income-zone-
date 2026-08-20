@@ -1,9 +1,10 @@
 import os
-import json
 import logging
 import threading
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import requests
 
 from telegram import (
     Update,
@@ -26,14 +27,12 @@ from telegram.ext import (
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
+SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
 ADMIN_ID = 7764329763
 
 REFERRAL_PERCENT = 0.20
-
-USERS_FILE = "users.json"
-TASKS_FILE = "tasks.json"
-SUBMISSIONS_FILE = "submissions.json"
-WITHDRAWALS_FILE = "withdrawals.json"
 
 PORT = int(os.getenv("PORT", "10000"))
 
@@ -43,6 +42,117 @@ logging.basicConfig(
 )
 
 logger = logging.getLogger(__name__)
+
+
+# =========================================================
+# SUPABASE
+# =========================================================
+
+def supabase_headers():
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
+
+
+def sb_get(table, params=None):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+
+    response = requests.get(
+        url,
+        headers=supabase_headers(),
+        params=params or {},
+        timeout=20,
+    )
+
+    if not response.ok:
+        logger.error(
+            "Supabase GET error %s: %s",
+            response.status_code,
+            response.text,
+        )
+        return []
+
+    return response.json()
+
+
+def sb_post(table, data, return_representation=False):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+
+    headers = supabase_headers()
+
+    if return_representation:
+        headers["Prefer"] = "return=representation"
+
+    response = requests.post(
+        url,
+        headers=headers,
+        json=data,
+        timeout=20,
+    )
+
+    if not response.ok:
+        logger.error(
+            "Supabase POST error %s: %s",
+            response.status_code,
+            response.text,
+        )
+        return None
+
+    if not response.text:
+        return []
+
+    return response.json()
+
+
+def sb_patch(table, params, data):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+
+    headers = supabase_headers()
+    headers["Prefer"] = "return=representation"
+
+    response = requests.patch(
+        url,
+        headers=headers,
+        params=params,
+        json=data,
+        timeout=20,
+    )
+
+    if not response.ok:
+        logger.error(
+            "Supabase PATCH error %s: %s",
+            response.status_code,
+            response.text,
+        )
+        return None
+
+    if not response.text:
+        return []
+
+    return response.json()
+
+
+def sb_delete(table, params):
+    url = f"{SUPABASE_URL}/rest/v1/{table}"
+
+    response = requests.delete(
+        url,
+        headers=supabase_headers(),
+        params=params,
+        timeout=20,
+    )
+
+    if not response.ok:
+        logger.error(
+            "Supabase DELETE error %s: %s",
+            response.status_code,
+            response.text,
+        )
+        return False
+
+    return True
 
 
 # =========================================================
@@ -58,6 +168,7 @@ class HealthHandler(BaseHTTPRequestHandler):
             "text/plain; charset=utf-8"
         )
         self.end_headers()
+
         self.wfile.write(
             b"Success Income Zone Bot is running!"
         )
@@ -87,193 +198,136 @@ def run_health_server():
 
 
 # =========================================================
-# JSON DATABASE
-# =========================================================
-
-def load_json(filename, default):
-
-    if not os.path.exists(filename):
-        return default
-
-    try:
-
-        with open(
-            filename,
-            "r",
-            encoding="utf-8"
-        ) as f:
-
-            return json.load(f)
-
-    except Exception as e:
-
-        logger.error(
-            f"Could not load {filename}: {e}"
-        )
-
-        return default
-
-
-def save_json(filename, data):
-
-    try:
-
-        with open(
-            filename,
-            "w",
-            encoding="utf-8"
-        ) as f:
-
-            json.dump(
-                data,
-                f,
-                indent=4,
-                ensure_ascii=False
-            )
-
-    except Exception as e:
-
-        logger.error(
-            f"Could not save {filename}: {e}"
-        )
-
-
-users = load_json(
-    USERS_FILE,
-    {}
-)
-
-tasks = load_json(
-    TASKS_FILE,
-    {}
-)
-
-submissions = load_json(
-    SUBMISSIONS_FILE,
-    {}
-)
-
-withdrawals = load_json(
-    WITHDRAWALS_FILE,
-    {}
-)
-
-
-def save_users():
-    save_json(
-        USERS_FILE,
-        users
-    )
-
-
-def save_tasks():
-    save_json(
-        TASKS_FILE,
-        tasks
-    )
-
-
-def save_submissions():
-    save_json(
-        SUBMISSIONS_FILE,
-        submissions
-    )
-
-
-def save_withdrawals():
-    save_json(
-        WITHDRAWALS_FILE,
-        withdrawals
-    )
-
-
-# =========================================================
-# USER
+# DATABASE HELPERS
 # =========================================================
 
 def get_user(tg_user):
 
-    uid = str(tg_user.id)
+    uid = tg_user.id
 
-    if uid not in users:
+    rows = sb_get(
+        "bot_users",
+        {
+            "id": f"eq.{uid}",
+            "limit": "1",
+        }
+    )
 
-        users[uid] = {
+    if rows:
+        user = rows[0]
 
-            "id": tg_user.id,
-
-            "first_name":
-                tg_user.first_name or "",
-
-            "last_name":
-                tg_user.last_name or "",
-
-            "username":
-                tg_user.username or "",
-
-            "balance": 0.0,
-
-            "referrals": [],
-
-            "referred_by": None,
-
-            "referral_earnings": 0.0,
-
-            "completed_tasks": [],
-
-            "joined":
-                datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
+        # Update profile information
+        updated = {
+            "first_name": tg_user.first_name or "",
+            "last_name": tg_user.last_name or "",
+            "username": tg_user.username or "",
         }
 
-        save_users()
-
-    else:
-
-        users[uid]["first_name"] = (
-            tg_user.first_name or ""
+        result = sb_patch(
+            "bot_users",
+            {"id": f"eq.{uid}"},
+            updated
         )
 
-        users[uid]["last_name"] = (
-            tg_user.last_name or ""
-        )
+        if result:
+            user = result[0]
 
-        users[uid]["username"] = (
-            tg_user.username or ""
-        )
+        return user
 
-        save_users()
+    data = {
+        "id": uid,
+        "first_name": tg_user.first_name or "",
+        "last_name": tg_user.last_name or "",
+        "username": tg_user.username or "",
+        "role": "user",
+        "language": "bn",
+        "balance": 0,
+        "referral_earnings": 0,
+        "referred_by": None,
+        "joined_at": datetime.now().isoformat(),
+    }
 
-    return users[uid]
+    result = sb_post(
+        "bot_users",
+        data,
+        return_representation=True
+    )
+
+    if result:
+        return result[0]
+
+    return data
+
+
+def get_user_by_id(user_id):
+
+    rows = sb_get(
+        "bot_users",
+        {
+            "id": f"eq.{user_id}",
+            "limit": "1",
+        }
+    )
+
+    return rows[0] if rows else None
+
+
+def update_user(user_id, data):
+
+    return sb_patch(
+        "bot_users",
+        {"id": f"eq.{user_id}"},
+        data
+    )
+
+
+def get_tasks():
+
+    return sb_get(
+        "tasks",
+        {
+            "order": "id.asc",
+        }
+    )
+
+
+def get_task(task_id):
+
+    rows = sb_get(
+        "tasks",
+        {
+            "id": f"eq.{task_id}",
+            "limit": "1",
+        }
+    )
+
+    return rows[0] if rows else None
+
+
+def get_submission(submission_id):
+
+    rows = sb_get(
+        "submissions",
+        {
+            "id": f"eq.{submission_id}",
+            "limit": "1",
+        }
+    )
+
+    return rows[0] if rows else None
 
 
 # =========================================================
-# MAIN KEYBOARD
+# KEYBOARDS
 # =========================================================
 
 def main_keyboard():
 
     keyboard = [
-
-        [
-            "💸 Balance",
-            "💰 Tasks"
-        ],
-
-        [
-            "📤 Withdraw",
-            "👤 Profile"
-        ],
-
-        [
-            "🏆 Top",
-            "🫂 My Referrals"
-        ],
-
-        [
-            "🌏 Language"
-        ]
-
+        ["💸 Balance", "💰 Tasks"],
+        ["📤 Withdraw", "👤 Profile"],
+        ["🏆 Top", "🫂 My Referrals"],
+        ["🌏 Language"],
     ]
 
     return ReplyKeyboardMarkup(
@@ -282,119 +336,101 @@ def main_keyboard():
     )
 
 
-# =========================================================
-# ADMIN KEYBOARD
-# =========================================================
-
 def admin_keyboard():
 
     keyboard = [
-
         [
             InlineKeyboardButton(
                 "➕ Add Task",
                 callback_data="admin_add_task"
             ),
-
             InlineKeyboardButton(
                 "📋 All Tasks",
                 callback_data="admin_all_tasks"
-            )
+            ),
         ],
-
         [
             InlineKeyboardButton(
                 "🗑 Delete Task",
                 callback_data="admin_delete_task"
             ),
-
             InlineKeyboardButton(
                 "👥 Users",
                 callback_data="admin_users"
-            )
+            ),
         ],
-
         [
             InlineKeyboardButton(
                 "📥 Pending Tasks",
                 callback_data="admin_pending"
-            )
+            ),
         ],
-
         [
             InlineKeyboardButton(
                 "💰 Add Balance",
                 callback_data="admin_add_balance"
             ),
-
             InlineKeyboardButton(
                 "➖ Remove Balance",
                 callback_data="admin_remove_balance"
-            )
+            ),
         ],
-
         [
             InlineKeyboardButton(
                 "📤 Withdrawals",
                 callback_data="admin_withdrawals"
-            )
-        ]
+            ),
+        ],
     ]
 
-    return InlineKeyboardMarkup(
-        keyboard
-    )
+    return InlineKeyboardMarkup(keyboard)
 
 
 # =========================================================
 # START
 # =========================================================
 
-async def start(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def start(update, context):
 
-    user = get_user(
-        update.effective_user
-    )
+    tg_user = update.effective_user
+    user = get_user(tg_user)
 
+    # Referral
     if context.args:
 
         referral_id = context.args[0]
 
-        if (
-            referral_id.isdigit()
-            and referral_id != str(user["id"])
-            and user["referred_by"] is None
-            and referral_id in users
-        ):
+        if referral_id.isdigit():
 
-            user["referred_by"] = int(
-                referral_id
-            )
+            referral_id = int(referral_id)
 
-            if str(user["id"]) not in users[
-                referral_id
-            ]["referrals"]:
+            if referral_id != tg_user.id:
 
-                users[
-                    referral_id
-                ]["referrals"].append(
-                    str(user["id"])
+                current_referrer = user.get(
+                    "referred_by"
                 )
 
-            save_users()
+                if current_referrer is None:
+
+                    referrer = get_user_by_id(
+                        referral_id
+                    )
+
+                    if referrer:
+
+                        update_user(
+                            tg_user.id,
+                            {
+                                "referred_by":
+                                    referral_id
+                            }
+                        )
 
     await update.message.reply_text(
-
         "👋 Welcome to Success Income Zone!\n\n"
-
         "💰 Complete tasks and earn BDT.\n"
         "👥 Refer friends and earn 20% commission.\n\n"
-
         "👇 Select an option:",
-
         reply_markup=main_keyboard()
     )
 
@@ -403,10 +439,7 @@ async def start(
 # BALANCE
 # =========================================================
 
-async def balance(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def balance(update, context):
 
     user = get_user(
         update.effective_user
@@ -417,13 +450,10 @@ async def balance(
         "💸 BALANCE\n\n"
 
         f"💰 Balance: "
-        f"{user['balance']:.2f} BDT\n\n"
-
-        f"👥 Referrals: "
-        f"{len(user['referrals'])}\n\n"
+        f"{float(user.get('balance', 0)):.2f} BDT\n\n"
 
         f"🎁 Referral Earnings: "
-        f"{user['referral_earnings']:.2f} BDT"
+        f"{float(user.get('referral_earnings', 0)):.2f} BDT"
     )
 
 
@@ -431,19 +461,30 @@ async def balance(
 # PROFILE
 # =========================================================
 
-async def profile(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def profile(update, context):
 
     user = get_user(
         update.effective_user
     )
 
     username = (
-        "@" + user["username"]
-        if user["username"]
+        "@" + user.get("username", "")
+        if user.get("username")
         else "No username"
+    )
+
+    # Count referrals
+    referral_rows = sb_get(
+        "bot_users",
+        {
+            "referred_by":
+                f"eq.{user['id']}",
+            "select": "id",
+        }
+    )
+
+    referral_count = len(
+        referral_rows
     )
 
     await update.message.reply_text(
@@ -452,11 +493,18 @@ async def profile(
 
         f"🆔 ID: {user['id']}\n"
         f"👤 Username: {username}\n"
-        f"💰 Balance: {user['balance']:.2f} BDT\n"
-        f"👥 Referrals: {len(user['referrals'])}\n"
+
+        f"💰 Balance: "
+        f"{float(user.get('balance', 0)):.2f} BDT\n"
+
+        f"👥 Referrals: "
+        f"{referral_count}\n"
+
         f"🎁 Referral Earnings: "
-        f"{user['referral_earnings']:.2f} BDT\n"
-        f"📅 Joined: {user['joined']}"
+        f"{float(user.get('referral_earnings', 0)):.2f} BDT\n"
+
+        f"📅 Joined: "
+        f"{user.get('joined_at', 'N/A')}"
     )
 
 
@@ -464,16 +512,22 @@ async def profile(
 # REFERRALS
 # =========================================================
 
-async def referrals(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def referrals(update, context):
 
     user = get_user(
         update.effective_user
     )
 
     bot = await context.bot.get_me()
+
+    referral_rows = sb_get(
+        "bot_users",
+        {
+            "referred_by":
+                f"eq.{user['id']}",
+            "select": "id",
+        }
+    )
 
     link = (
         f"https://t.me/{bot.username}"
@@ -485,12 +539,13 @@ async def referrals(
         "🫂 MY REFERRALS\n\n"
 
         f"👥 Referrals: "
-        f"{len(user['referrals'])}\n"
+        f"{len(referral_rows)}\n"
 
         f"🎁 Earnings: "
-        f"{user['referral_earnings']:.2f} BDT\n\n"
+        f"{float(user.get('referral_earnings', 0)):.2f} BDT\n\n"
 
-        f"🔗 Your Referral Link:\n{link}"
+        f"🔗 Your Referral Link:\n"
+        f"{link}"
     )
 
 
@@ -498,35 +553,55 @@ async def referrals(
 # TASK LIST
 # =========================================================
 
-async def show_tasks(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def show_tasks(update, context):
 
     user = get_user(
         update.effective_user
     )
 
+    tasks = get_tasks()
+
+    if not tasks:
+
+        await update.message.reply_text(
+            "📋 Tasks\n\n"
+            "❌ বর্তমানে কোনো Task নেই।"
+        )
+
+        return
+
     keyboard = []
 
-    for task_id, task in tasks.items():
+    for task in tasks:
 
-        if task_id in user["completed_tasks"]:
+        task_id = str(task["id"])
+
+        # Check already approved submission
+        completed = sb_get(
+            "submissions",
+            {
+                "user_id":
+                    f"eq.{user['id']}",
+                "task_id":
+                    f"eq.{task['id']}",
+                "status":
+                    "eq.approved",
+                "select": "id",
+                "limit": "1",
+            }
+        )
+
+        if completed:
             continue
 
         reward = float(
-            task["reward"]
-        )
-
-        button_text = (
-            f"{task['title']} "
-            f"({reward:.2f} BDT)"
+            task.get("reward", 0)
         )
 
         keyboard.append([
 
             InlineKeyboardButton(
-                button_text,
+                f"{task['title']} ({reward:.2f} BDT)",
                 callback_data=
                 f"select_task_{task_id}"
             )
@@ -536,18 +611,15 @@ async def show_tasks(
     if not keyboard:
 
         await update.message.reply_text(
-
             "📋 Tasks\n\n"
-            "❌ বর্তমানে কোনো Task নেই।"
+            "❌ আপনি সব available Task complete করেছেন।"
         )
 
         return
 
     await update.message.reply_text(
-
         "📋 Tasks\n\n"
         "👇 Please select a task:",
-
         reply_markup=
         InlineKeyboardMarkup(keyboard)
     )
@@ -557,13 +629,9 @@ async def show_tasks(
 # SELECT TASK
 # =========================================================
 
-async def select_task(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def select_task(update, context):
 
     query = update.callback_query
-
     await query.answer()
 
     task_id = query.data.replace(
@@ -571,7 +639,9 @@ async def select_task(
         ""
     )
 
-    if task_id not in tasks:
+    task = get_task(task_id)
+
+    if not task:
 
         await query.message.reply_text(
             "❌ Task not found."
@@ -579,10 +649,13 @@ async def select_task(
 
         return
 
-    task = tasks[task_id]
-
     reward = float(
-        task["reward"]
+        task.get("reward", 0)
+    )
+
+    review_hours = task.get(
+        "review_hours",
+        0
     )
 
     text = (
@@ -593,13 +666,10 @@ async def select_task(
         f"{reward:.2f} BDT\n\n"
 
         f"⏳ Review time: "
-        f"{task['review_time']}\n\n"
+        f"{review_hours} hours\n\n"
 
-        f"📄 Description:\n"
-        f"{task['description']}\n\n"
-
-        f"✍️ Report instruction:\n"
-        f"{task['report_instruction']}\n"
+        "📄 Please complete the task and "
+        "then submit your Facebook UID and report."
     )
 
     keyboard = [[
@@ -613,9 +683,7 @@ async def select_task(
     ]]
 
     await query.message.reply_text(
-
         text,
-
         reply_markup=
         InlineKeyboardMarkup(keyboard)
     )
@@ -625,13 +693,9 @@ async def select_task(
 # START TASK
 # =========================================================
 
-async def start_task(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def start_task(update, context):
 
     query = update.callback_query
-
     await query.answer()
 
     user = get_user(
@@ -643,7 +707,9 @@ async def start_task(
         ""
     )
 
-    if task_id not in tasks:
+    task = get_task(task_id)
+
+    if not task:
 
         await query.message.reply_text(
             "❌ Task not found."
@@ -651,24 +717,29 @@ async def start_task(
 
         return
 
-    for submission in submissions.values():
+    # Pending submission check
+    pending = sb_get(
+        "submissions",
+        {
+            "user_id":
+                f"eq.{user['id']}",
+            "task_id":
+                f"eq.{task['id']}",
+            "status":
+                "eq.pending",
+            "select": "id",
+            "limit": "1",
+        }
+    )
 
-        if (
-            submission["user_id"]
-            == user["id"]
-            and submission["task_id"]
-            == task_id
-            and submission["status"]
-            == "pending"
-        ):
+    if pending:
 
-            await query.message.reply_text(
+        await query.message.reply_text(
+            "⏳ You already submitted this task.\n"
+            "Please wait for review."
+        )
 
-                "⏳ You already submitted this task.\n"
-                "Please wait for review."
-            )
-
-            return
+        return
 
     context.user_data[
         "task_id"
@@ -679,9 +750,7 @@ async def start_task(
     ] = "uid"
 
     await query.message.reply_text(
-
         "🚀 Task Started!\n\n"
-
         "Send your Facebook UID:"
     )
 
@@ -690,13 +759,9 @@ async def start_task(
 # CONFIRM SUBMISSION
 # =========================================================
 
-async def confirm_submission(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def confirm_submission(update, context):
 
     query = update.callback_query
-
     await query.answer()
 
     task_id = context.user_data.get(
@@ -711,10 +776,20 @@ async def confirm_submission(
         "task_report"
     )
 
-    if not task_id or task_id not in tasks:
+    if not task_id:
 
         await query.message.reply_text(
             "❌ Task session expired."
+        )
+
+        return
+
+    task = get_task(task_id)
+
+    if not task:
+
+        await query.message.reply_text(
+            "❌ Task not found."
         )
 
         return
@@ -731,57 +806,72 @@ async def confirm_submission(
         query.from_user
     )
 
-    submission_id = str(
-        len(submissions) + 1
+    # Check duplicate Facebook UID
+    existing_uid = sb_get(
+        "submissions",
+        {
+            "facebook_uid":
+                f"eq.{uid_value}",
+            "select":
+                "id,status",
+            "limit":
+                "1",
+        }
     )
 
-    while submission_id in submissions:
+    if existing_uid:
 
-        submission_id = str(
-            int(submission_id) + 1
+        await query.message.reply_text(
+            "❌ This Facebook UID has already been submitted."
         )
 
-    submissions[submission_id] = {
+        return
 
-        "id": submission_id,
+    data = {
 
-        "user_id": user["id"],
+        "user_id":
+            user["id"],
 
-        "username":
-            user["username"],
-
-        "task_id": task_id,
-
-        "task_name":
-            tasks[task_id]["title"],
-
-        "reward":
-            float(tasks[task_id]["reward"]),
+        "task_id":
+            int(task["id"]),
 
         "facebook_uid":
             uid_value,
 
-        "report":
+        "written_report":
             report,
+
+        "reward":
+            float(task["reward"]),
 
         "status":
             "pending",
 
         "created_at":
-            datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            datetime.now().isoformat(),
     }
 
-    save_submissions()
+    result = sb_post(
+        "submissions",
+        data,
+        return_representation=True
+    )
+
+    if not result:
+
+        await query.message.reply_text(
+            "❌ Could not submit task. Please try again."
+        )
+
+        return
+
+    submission = result[0]
 
     context.user_data.clear()
 
     await query.message.reply_text(
 
-        "✅ Your report has been received!\n"
-        "Please wait.\n\n"
-
+        "✅ Your report has been received!\n\n"
         "⏳ Task Pending Review"
     )
 
@@ -797,19 +887,19 @@ async def confirm_submission(
                 "📥 NEW TASK SUBMISSION\n\n"
 
                 f"🆔 Submission: "
-                f"{submission_id}\n"
+                f"{submission['id']}\n"
 
                 f"👤 User ID: "
                 f"{user['id']}\n"
 
                 f"👤 Username: "
-                f"@{user['username'] if user['username'] else 'None'}\n\n"
+                f"@{user.get('username') or 'None'}\n\n"
 
                 f"📋 Task: "
-                f"{tasks[task_id]['title']}\n"
+                f"{task['title']}\n"
 
                 f"💰 Reward: "
-                f"{float(tasks[task_id]['reward']):.2f} BDT\n\n"
+                f"{float(task['reward']):.2f} BDT\n\n"
 
                 f"🆔 Facebook UID: "
                 f"{uid_value}\n\n"
@@ -826,13 +916,13 @@ async def confirm_submission(
                     InlineKeyboardButton(
                         "✅ Approve",
                         callback_data=
-                        f"approve_{submission_id}"
+                        f"approve_{submission['id']}"
                     ),
 
                     InlineKeyboardButton(
                         "❌ Reject",
                         callback_data=
-                        f"reject_{submission_id}"
+                        f"reject_{submission['id']}"
                     )
 
                 ]
@@ -850,13 +940,9 @@ async def confirm_submission(
 # APPROVE / REJECT
 # =========================================================
 
-async def review_submission(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def review_submission(update, context):
 
     query = update.callback_query
-
     await query.answer()
 
     if query.from_user.id != ADMIN_ID:
@@ -867,9 +953,7 @@ async def review_submission(
 
         return
 
-    if query.data.startswith(
-        "approve_"
-    ):
+    if query.data.startswith("approve_"):
 
         submission_id = query.data.replace(
             "approve_",
@@ -887,17 +971,17 @@ async def review_submission(
 
         action = "rejected"
 
-    if submission_id not in submissions:
+    submission = get_submission(
+        submission_id
+    )
+
+    if not submission:
 
         await query.message.reply_text(
             "❌ Submission not found."
         )
 
         return
-
-    submission = submissions[
-        submission_id
-    ]
 
     if submission["status"] != "pending":
 
@@ -907,23 +991,38 @@ async def review_submission(
 
         return
 
-    submission["status"] = action
-
-    submission["reviewed_at"] = (
-        datetime.now().strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
-    )
-
-    save_submissions()
-
-    user_id = str(
-        submission["user_id"]
-    )
+    user_id = submission["user_id"]
 
     reward = float(
-        submission["reward"]
+        submission.get("reward", 0)
     )
+
+    # Update submission
+    updated = sb_patch(
+        "submissions",
+        {
+            "id":
+                f"eq.{submission_id}"
+        },
+        {
+            "status":
+                action,
+
+            "reviewed_at":
+                datetime.now().isoformat(),
+
+            "reviewed_by":
+                ADMIN_ID,
+        }
+    )
+
+    if not updated:
+
+        await query.message.reply_text(
+            "❌ Could not update submission."
+        )
+
+        return
 
     # =====================================================
     # APPROVED
@@ -931,56 +1030,87 @@ async def review_submission(
 
     if action == "approved":
 
-        if user_id in users:
+        user = get_user_by_id(
+            user_id
+        )
 
-            users[user_id]["balance"] += reward
+        if not user:
 
-            if (
-                submission["task_id"]
-                not in
-                users[user_id]["completed_tasks"]
-            ):
+            await query.message.reply_text(
+                "❌ User not found."
+            )
 
-                users[
-                    user_id
-                ]["completed_tasks"].append(
-                    submission["task_id"]
-                )
+            return
 
-            # Referral commission
-            referrer = users[user_id].get(
-                "referred_by"
+        old_balance = float(
+            user.get("balance", 0)
+        )
+
+        new_balance = (
+            old_balance + reward
+        )
+
+        update_user(
+            user_id,
+            {
+                "balance":
+                    new_balance
+            }
+        )
+
+        # Referral commission
+        referrer_id = user.get(
+            "referred_by"
+        )
+
+        commission = 0
+
+        if referrer_id:
+
+            referrer = get_user_by_id(
+                referrer_id
             )
 
             if referrer:
 
-                referrer_id = str(
-                    referrer
+                commission = (
+                    reward *
+                    REFERRAL_PERCENT
                 )
 
-                if referrer_id in users:
-
-                    commission = (
-                        reward *
-                        REFERRAL_PERCENT
+                ref_balance = float(
+                    referrer.get(
+                        "balance",
+                        0
                     )
+                )
 
-                    users[
-                        referrer_id
-                    ]["balance"] += commission
+                ref_earnings = float(
+                    referrer.get(
+                        "referral_earnings",
+                        0
+                    )
+                )
 
-                    users[
-                        referrer_id
-                    ]["referral_earnings"] += commission
+                update_user(
+                    referrer_id,
+                    {
+                        "balance":
+                            ref_balance +
+                            commission,
 
-            save_users()
+                        "referral_earnings":
+                            ref_earnings +
+                            commission,
+                    }
+                )
 
         await query.message.reply_text(
 
             "✅ TASK APPROVED\n\n"
 
             f"👤 User ID: "
-            f"{submission['user_id']}\n"
+            f"{user_id}\n"
 
             f"💰 Reward Added: "
             f"{reward:.2f} BDT"
@@ -988,24 +1118,26 @@ async def review_submission(
 
         try:
 
+            final_user = get_user_by_id(
+                user_id
+            )
+
             await context.bot.send_message(
 
-                chat_id=submission[
-                    "user_id"
-                ],
+                chat_id=user_id,
 
                 text=(
 
                     "🎉 Task Approved!\n\n"
 
                     f"📋 Task: "
-                    f"{submission['task_name']}\n"
+                    f"{submission.get('task_id')}\n"
 
                     f"💰 Reward: "
                     f"{reward:.2f} BDT\n\n"
 
                     f"💵 Your Balance: "
-                    f"{users[user_id]['balance']:.2f} BDT"
+                    f"{float(final_user.get('balance', 0)):.2f} BDT"
                 )
             )
 
@@ -1024,23 +1156,21 @@ async def review_submission(
             "❌ TASK REJECTED\n\n"
 
             f"👤 User ID: "
-            f"{submission['user_id']}"
+            f"{user_id}"
         )
 
         try:
 
             await context.bot.send_message(
 
-                chat_id=submission[
-                    "user_id"
-                ],
+                chat_id=user_id,
 
                 text=(
 
                     "❌ Task Rejected\n\n"
 
-                    f"📋 Task: "
-                    f"{submission['task_name']}\n\n"
+                    f"📋 Task ID: "
+                    f"{submission.get('task_id')}\n\n"
 
                     "💰 No reward was added."
                 )
@@ -1055,10 +1185,7 @@ async def review_submission(
 # ADMIN COMMAND
 # =========================================================
 
-async def admin_command(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def admin_command(update, context):
 
     if update.effective_user.id != ADMIN_ID:
 
@@ -1081,13 +1208,9 @@ async def admin_command(
 # ADMIN CALLBACK
 # =========================================================
 
-async def admin_callback(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def admin_callback(update, context):
 
     query = update.callback_query
-
     await query.answer()
 
     if query.from_user.id != ADMIN_ID:
@@ -1100,10 +1223,7 @@ async def admin_callback(
 
     action = query.data
 
-    # -----------------------------------------------------
     # ADD TASK
-    # -----------------------------------------------------
-
     if action == "admin_add_task":
 
         context.user_data[
@@ -1111,21 +1231,18 @@ async def admin_callback(
         ] = "task_name"
 
         await query.message.reply_text(
-
             "➕ ADD TASK\n\n"
-
             "📌 Send Task Name:"
         )
 
         return
 
-    # -----------------------------------------------------
     # ALL TASKS
-    # -----------------------------------------------------
-
     if action == "admin_all_tasks":
 
-        if not tasks:
+        task_list = get_tasks()
+
+        if not task_list:
 
             await query.message.reply_text(
                 "📋 No tasks available."
@@ -1135,14 +1252,14 @@ async def admin_callback(
 
         text = "📋 ALL TASKS\n\n"
 
-        for task_id, task in tasks.items():
+        for task in task_list:
 
             text += (
 
-                f"🆔 Task ID: {task_id}\n"
+                f"🆔 Task ID: {task['id']}\n"
                 f"📌 {task['title']}\n"
                 f"💰 {float(task['reward']):.2f} BDT\n"
-                f"⏳ {task['review_time']}\n\n"
+                f"⏳ Review: {task.get('review_hours', 0)} hours\n\n"
             )
 
         await query.message.reply_text(
@@ -1151,13 +1268,12 @@ async def admin_callback(
 
         return
 
-    # -----------------------------------------------------
     # DELETE TASK
-    # -----------------------------------------------------
-
     if action == "admin_delete_task":
 
-        if not tasks:
+        task_list = get_tasks()
+
+        if not task_list:
 
             await query.message.reply_text(
                 "❌ No tasks."
@@ -1167,11 +1283,10 @@ async def admin_callback(
 
         text = "🗑 DELETE TASK\n\n"
 
-        for task_id, task in tasks.items():
+        for task in task_list:
 
             text += (
-
-                f"🆔 {task_id}\n"
+                f"🆔 {task['id']}\n"
                 f"📌 {task['title']}\n\n"
             )
 
@@ -1180,25 +1295,24 @@ async def admin_callback(
         ] = "delete_task"
 
         await query.message.reply_text(
-
             text +
             "Send Task ID to delete:"
         )
 
         return
 
-    # -----------------------------------------------------
     # PENDING
-    # -----------------------------------------------------
-
     if action == "admin_pending":
 
-        pending = [
-
-            s for s in submissions.values()
-
-            if s["status"] == "pending"
-        ]
+        pending = sb_get(
+            "submissions",
+            {
+                "status":
+                    "eq.pending",
+                "order":
+                    "id.asc",
+            }
+        )
 
         if not pending:
 
@@ -1232,11 +1346,12 @@ async def admin_callback(
 
                 f"🆔 Submission: {s['id']}\n"
                 f"👤 User: {s['user_id']}\n"
-                f"📋 Task: {s['task_name']}\n"
+                f"📋 Task ID: {s['task_id']}\n"
                 f"💰 Reward: "
                 f"{float(s['reward']):.2f} BDT\n"
                 f"🆔 UID: {s['facebook_uid']}\n\n"
-                f"📄 Report:\n{s['report']}",
+                f"📄 Report:\n"
+                f"{s['written_report']}",
 
                 reply_markup=
                 InlineKeyboardMarkup(keyboard)
@@ -1244,26 +1359,28 @@ async def admin_callback(
 
         return
 
-    # -----------------------------------------------------
     # USERS
-    # -----------------------------------------------------
-
     if action == "admin_users":
+
+        user_list = sb_get(
+            "bot_users",
+            {
+                "select":
+                    "id",
+            }
+        )
 
         await query.message.reply_text(
 
             "👥 USERS\n\n"
 
             f"Total Users: "
-            f"{len(users)}"
+            f"{len(user_list)}"
         )
 
         return
 
-    # -----------------------------------------------------
     # ADD BALANCE
-    # -----------------------------------------------------
-
     if action == "admin_add_balance":
 
         context.user_data[
@@ -1283,10 +1400,7 @@ async def admin_callback(
 
         return
 
-    # -----------------------------------------------------
     # REMOVE BALANCE
-    # -----------------------------------------------------
-
     if action == "admin_remove_balance":
 
         context.user_data[
@@ -1303,18 +1417,18 @@ async def admin_callback(
 
         return
 
-    # -----------------------------------------------------
     # WITHDRAWALS
-    # -----------------------------------------------------
-
     if action == "admin_withdrawals":
 
-        pending = [
-
-            w for w in withdrawals.values()
-
-            if w["status"] == "pending"
-        ]
+        pending = sb_get(
+            "withdrawals",
+            {
+                "status":
+                    "eq.pending",
+                "order":
+                    "id.asc",
+            }
+        )
 
         if not pending:
 
@@ -1332,8 +1446,8 @@ async def admin_callback(
 
                 f"🆔 {w['id']}\n"
                 f"👤 User: {w['user_id']}\n"
-                f"💰 {w['amount']:.2f} BDT\n"
-                f"💳 Method: {w['method']}\n\n"
+                f"💰 Amount: {float(w['amount']):.2f} BDT\n"
+                f"💳 Method: {w.get('method', 'Pending')}\n\n"
             )
 
         await query.message.reply_text(
@@ -1345,10 +1459,7 @@ async def admin_callback(
 # ADMIN TEXT PROCESSING
 # =========================================================
 
-async def process_admin_text(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def process_admin_text(update, context):
 
     if update.effective_user.id != ADMIN_ID:
         return False
@@ -1362,10 +1473,7 @@ async def process_admin_text(
 
     text = update.message.text.strip()
 
-    # -----------------------------------------------------
     # TASK NAME
-    # -----------------------------------------------------
-
     if state == "task_name":
 
         context.user_data[
@@ -1377,22 +1485,13 @@ async def process_admin_text(
         ] = "task_reward"
 
         await update.message.reply_text(
-
             "💵 Send Reward in BDT:\n\n"
-
-            "Example:\n"
-            "10\n\n"
-
-            "or\n\n"
-            "25.50"
+            "Example: 10"
         )
 
         return True
 
-    # -----------------------------------------------------
     # TASK REWARD
-    # -----------------------------------------------------
-
     if state == "task_reward":
 
         try:
@@ -1405,12 +1504,8 @@ async def process_admin_text(
         except ValueError:
 
             await update.message.reply_text(
-
                 "❌ Invalid amount.\n\n"
-
-                "Example:\n"
-                "10\n"
-                "25.50"
+                "Example: 10 or 25.50"
             )
 
             return True
@@ -1424,40 +1519,46 @@ async def process_admin_text(
         ] = "task_review"
 
         await update.message.reply_text(
-
-            "⏳ Send Review Time:\n\n"
-
-            "Example:\n"
-            "12 hours"
+            "⏳ Send Review Time in hours:\n\n"
+            "Example: 12"
         )
 
         return True
 
-    # -----------------------------------------------------
-    # REVIEW TIME
-    # -----------------------------------------------------
-
+    # REVIEW HOURS
     if state == "task_review":
+
+        try:
+
+            review_hours = float(text)
+
+            if review_hours < 0:
+                raise ValueError
+
+        except ValueError:
+
+            await update.message.reply_text(
+                "❌ Invalid review hours.\n\n"
+                "Example: 12"
+            )
+
+            return True
 
         context.user_data[
             "new_task_review"
-        ] = text
+        ] = review_hours
 
         context.user_data[
             "admin_state"
         ] = "task_description"
 
         await update.message.reply_text(
-
             "📄 Send Task Description:"
         )
 
         return True
 
-    # -----------------------------------------------------
     # DESCRIPTION
-    # -----------------------------------------------------
-
     if state == "task_description":
 
         context.user_data[
@@ -1469,30 +1570,18 @@ async def process_admin_text(
         ] = "task_report"
 
         await update.message.reply_text(
-
             "✍️ Send Report Instruction:"
         )
 
         return True
 
-    # -----------------------------------------------------
-    # REPORT INSTRUCTION
-    # -----------------------------------------------------
-
+    # REPORT
     if state == "task_report":
 
-        task_id = str(
-            len(tasks) + 1
-        )
+        # আপনার tasks table-এ description/report_instruction
+        # column নেই, তাই শুধু প্রয়োজনীয় 4টি column insert করছি।
 
-        while task_id in tasks:
-
-            task_id = str(
-                int(task_id) + 1
-            )
-
-        tasks[task_id] = {
-
+        data = {
             "title":
                 context.user_data[
                     "new_task_name"
@@ -1503,26 +1592,28 @@ async def process_admin_text(
                     "new_task_reward"
                 ],
 
-            "review_time":
+            "review_hours":
                 context.user_data[
                     "new_task_review"
                 ],
-
-            "description":
-                context.user_data[
-                    "new_task_description"
-                ],
-
-            "report_instruction":
-                text,
-
-            "created_at":
-                datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                )
         }
 
-        save_tasks()
+        result = sb_post(
+            "tasks",
+            data,
+            return_representation=True
+        )
+
+        if not result:
+
+            await update.message.reply_text(
+                "❌ Task save হয়নি।\n"
+                "Supabase logs দেখুন।"
+            )
+
+            return True
+
+        task = result[0]
 
         context.user_data.clear()
 
@@ -1530,23 +1621,32 @@ async def process_admin_text(
 
             "✅ TASK ADDED SUCCESSFULLY!\n\n"
 
-            f"🆔 Task ID: {task_id}\n"
-            f"📌 Task: {tasks[task_id]['title']}\n"
+            f"🆔 Task ID: {task['id']}\n"
+            f"📌 Task: {task['title']}\n"
             f"💰 Reward: "
-            f"{float(tasks[task_id]['reward']):.2f} BDT\n"
+            f"{float(task['reward']):.2f} BDT\n"
             f"⏳ Review: "
-            f"{tasks[task_id]['review_time']}"
+            f"{task['review_hours']} hours"
         )
 
         return True
 
-    # -----------------------------------------------------
     # DELETE TASK
-    # -----------------------------------------------------
-
     if state == "delete_task":
 
-        if text not in tasks:
+        try:
+            task_id = int(text)
+        except ValueError:
+
+            await update.message.reply_text(
+                "❌ Invalid Task ID."
+            )
+
+            return True
+
+        task = get_task(task_id)
+
+        if not task:
 
             await update.message.reply_text(
                 "❌ Task ID not found."
@@ -1554,11 +1654,22 @@ async def process_admin_text(
 
             return True
 
-        deleted = tasks.pop(
-            text
+        # Delete task
+        success = sb_delete(
+            "tasks",
+            {
+                "id":
+                    f"eq.{task_id}"
+            }
         )
 
-        save_tasks()
+        if not success:
+
+            await update.message.reply_text(
+                "❌ Task delete হয়নি।"
+            )
+
+            return True
 
         context.user_data.clear()
 
@@ -1566,15 +1677,12 @@ async def process_admin_text(
 
             "✅ Task Deleted\n\n"
 
-            f"📌 {deleted['title']}"
+            f"📌 {task['title']}"
         )
 
         return True
 
-    # -----------------------------------------------------
     # ADD BALANCE
-    # -----------------------------------------------------
-
     if state == "add_balance":
 
         try:
@@ -1584,23 +1692,39 @@ async def process_admin_text(
                 1
             )
 
-            user_id = user_id.strip()
+            user_id = int(
+                user_id.strip()
+            )
 
             amount = float(
                 amount.strip()
             )
 
-            if user_id not in users:
-                raise ValueError
-
             if amount <= 0:
                 raise ValueError
 
-            users[user_id][
-                "balance"
-            ] += amount
+            user = get_user_by_id(
+                user_id
+            )
 
-            save_users()
+            if not user:
+                raise ValueError
+
+            current = float(
+                user.get("balance", 0)
+            )
+
+            new_balance = (
+                current + amount
+            )
+
+            update_user(
+                user_id,
+                {
+                    "balance":
+                        new_balance
+                }
+            )
 
             context.user_data.clear()
 
@@ -1614,74 +1738,7 @@ async def process_admin_text(
                 f"{amount:.2f} BDT\n"
 
                 f"💵 New Balance: "
-                f"{users[user_id]['balance']:.2f} BDT"
-            )
-
-        except Exception:
-
-            await update.message.reply_text(
-
-                "❌ Wrong Format.\n\n"
-
-                "Correct:\n"
-                "USER_ID | AMOUNT\n\n"
-
-                "Example:\n"
-                "7764329763 | 100"
-            )
-
-        return True
-
-    # -----------------------------------------------------
-    # REMOVE BALANCE
-    # -----------------------------------------------------
-
-    if state == "remove_balance":
-
-        try:
-
-            user_id, amount = text.split(
-                "|",
-                1
-            )
-
-            user_id = user_id.strip()
-
-            amount = float(
-                amount.strip()
-            )
-
-            if user_id not in users:
-                raise ValueError
-
-            if amount <= 0:
-                raise ValueError
-
-            users[user_id][
-                "balance"
-            ] = max(
-
-                0,
-
-                users[user_id]["balance"]
-                - amount
-            )
-
-            save_users()
-
-            context.user_data.clear()
-
-            await update.message.reply_text(
-
-                "✅ Balance Removed\n\n"
-
-                f"👤 User: {user_id}\n"
-
-                f"➖ Removed: "
-                f"{amount:.2f} BDT\n"
-
-                f"💵 Balance: "
-                f"{users[user_id]['balance']:.2f} BDT"
+                f"{new_balance:.2f} BDT"
             )
 
         except Exception:
@@ -1696,6 +1753,76 @@ async def process_admin_text(
 
         return True
 
+    # REMOVE BALANCE
+    if state == "remove_balance":
+
+        try:
+
+            user_id, amount = text.split(
+                "|",
+                1
+            )
+
+            user_id = int(
+                user_id.strip()
+            )
+
+            amount = float(
+                amount.strip()
+            )
+
+            if amount <= 0:
+                raise ValueError
+
+            user = get_user_by_id(
+                user_id
+            )
+
+            if not user:
+                raise ValueError
+
+            current = float(
+                user.get("balance", 0)
+            )
+
+            new_balance = max(
+                0,
+                current - amount
+            )
+
+            update_user(
+                user_id,
+                {
+                    "balance":
+                        new_balance
+                }
+            )
+
+            context.user_data.clear()
+
+            await update.message.reply_text(
+
+                "✅ Balance Removed\n\n"
+
+                f"👤 User: {user_id}\n"
+
+                f"➖ Removed: "
+                f"{amount:.2f} BDT\n"
+
+                f"💵 Balance: "
+                f"{new_balance:.2f} BDT"
+            )
+
+        except Exception:
+
+            await update.message.reply_text(
+                "❌ Wrong Format.\n\n"
+                "Correct:\n"
+                "USER_ID | AMOUNT"
+            )
+
+        return True
+
     return False
 
 
@@ -1703,10 +1830,7 @@ async def process_admin_text(
 # TASK USER TEXT FLOW
 # =========================================================
 
-async def process_task_text(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def process_task_text(update, context):
 
     step = context.user_data.get(
         "task_step"
@@ -1717,16 +1841,12 @@ async def process_task_text(
 
     text = update.message.text.strip()
 
-    # -----------------------------------------------------
     # UID
-    # -----------------------------------------------------
-
     if step == "uid":
 
         if len(text) < 3:
 
             await update.message.reply_text(
-
                 "❌ Please send a valid Facebook UID."
             )
 
@@ -1741,18 +1861,13 @@ async def process_task_text(
         ] = "report"
 
         await update.message.reply_text(
-
             "👤 UID received.\n\n"
-
             "📋 Please send your task report:"
         )
 
         return True
 
-    # -----------------------------------------------------
     # REPORT
-    # -----------------------------------------------------
-
     if step == "report":
 
         context.user_data[
@@ -1766,7 +1881,6 @@ async def process_task_text(
         await update.message.reply_text(
 
             "📋 Report received.\n\n"
-
             "Please confirm your submission:",
 
             reply_markup=
@@ -1775,7 +1889,7 @@ async def process_task_text(
                 [
 
                     InlineKeyboardButton(
-                        "✅ Account registered",
+                        "✅ Submit",
                         callback_data=
                         "confirm_submission"
                     )
@@ -1794,21 +1908,20 @@ async def process_task_text(
 # WITHDRAW
 # =========================================================
 
-async def withdraw(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def withdraw(update, context):
 
     user = get_user(
         update.effective_user
     )
 
-    if user["balance"] <= 0:
+    balance_value = float(
+        user.get("balance", 0)
+    )
+
+    if balance_value <= 0:
 
         await update.message.reply_text(
-
             "📤 Withdraw\n\n"
-
             "❌ Your balance is 0.00 BDT."
         )
 
@@ -1823,7 +1936,7 @@ async def withdraw(
         "📤 WITHDRAW\n\n"
 
         f"💰 Available Balance: "
-        f"{user['balance']:.2f} BDT\n\n"
+        f"{balance_value:.2f} BDT\n\n"
 
         "Send withdrawal amount:"
     )
@@ -1833,10 +1946,7 @@ async def withdraw(
 # WITHDRAW PROCESS
 # =========================================================
 
-async def process_withdraw(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def process_withdraw(update, context):
 
     if not context.user_data.get(
         "withdraw"
@@ -1854,13 +1964,17 @@ async def process_withdraw(
             update.message.text.strip()
         )
 
-    except:
+    except ValueError:
 
         await update.message.reply_text(
             "❌ Invalid amount."
         )
 
         return True
+
+    balance_value = float(
+        user.get("balance", 0)
+    )
 
     if amount <= 0:
 
@@ -1870,47 +1984,71 @@ async def process_withdraw(
 
         return True
 
-    if amount > user["balance"]:
+    if amount > balance_value:
 
         await update.message.reply_text(
-
             f"❌ Insufficient balance.\n\n"
-
             f"Available: "
-            f"{user['balance']:.2f} BDT"
+            f"{balance_value:.2f} BDT"
         )
 
         return True
 
-    request_id = str(
-        len(withdrawals) + 1
+    # Deduct balance when withdrawal is requested
+    new_balance = (
+        balance_value - amount
     )
 
-    while request_id in withdrawals:
+    update_user(
+        user["id"],
+        {
+            "balance":
+                new_balance
+        }
+    )
 
-        request_id = str(
-            int(request_id) + 1
-        )
+    data = {
 
-    withdrawals[request_id] = {
+        "user_id":
+            user["id"],
 
-        "id": request_id,
+        "amount":
+            amount,
 
-        "user_id": user["id"],
+        "method":
+            "Pending",
 
-        "amount": amount,
+        "status":
+            "pending",
 
-        "method": "Pending",
-
-        "status": "pending",
-
-        "date":
-            datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+        "created_at":
+            datetime.now().isoformat(),
     }
 
-    save_withdrawals()
+    result = sb_post(
+        "withdrawals",
+        data,
+        return_representation=True
+    )
+
+    if not result:
+
+        # Restore balance if withdrawal failed
+        update_user(
+            user["id"],
+            {
+                "balance":
+                    balance_value
+            }
+        )
+
+        await update.message.reply_text(
+            "❌ Withdrawal request তৈরি হয়নি।"
+        )
+
+        return True
+
+    withdrawal = result[0]
 
     context.user_data.clear()
 
@@ -1922,10 +2060,38 @@ async def process_withdraw(
         f"{amount:.2f} BDT\n"
 
         f"🆔 Request ID: "
-        f"{request_id}\n\n"
+        f"{withdrawal['id']}\n\n"
 
         "⏳ Please wait for Admin review."
     )
+
+    # Notify admin
+    try:
+
+        await context.bot.send_message(
+
+            chat_id=ADMIN_ID,
+
+            text=(
+
+                "📤 NEW WITHDRAWAL\n\n"
+
+                f"🆔 Request: "
+                f"{withdrawal['id']}\n"
+
+                f"👤 User: "
+                f"{user['id']}\n"
+
+                f"💰 Amount: "
+                f"{amount:.2f} BDT\n"
+
+                f"💳 Method: Pending"
+            )
+        )
+
+    except Exception as e:
+
+        logger.error(e)
 
     return True
 
@@ -1934,10 +2100,19 @@ async def process_withdraw(
 # TOP USERS
 # =========================================================
 
-async def top_users(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def top_users(update, context):
+
+    users = sb_get(
+        "bot_users",
+        {
+            "select":
+                "id,first_name,balance",
+            "order":
+                "balance.desc",
+            "limit":
+                "10",
+        }
+    )
 
     if not users:
 
@@ -1947,33 +2122,20 @@ async def top_users(
 
         return
 
-    top = sorted(
-
-        users.values(),
-
-        key=lambda x:
-        float(
-            x.get("balance", 0)
-        ),
-
-        reverse=True
-
-    )[:10]
-
     text = "🏆 TOP USERS\n\n"
 
-    for i, u in enumerate(
-        top,
+    for i, user in enumerate(
+        users,
         1
     ):
 
         text += (
 
             f"{i}. "
-            f"{u.get('first_name', 'User')}\n"
+            f"{user.get('first_name') or 'User'}\n"
 
             f"💰 "
-            f"{float(u.get('balance', 0)):.2f} BDT\n\n"
+            f"{float(user.get('balance', 0)):.2f} BDT\n\n"
         )
 
     await update.message.reply_text(
@@ -1985,15 +2147,10 @@ async def top_users(
 # LANGUAGE
 # =========================================================
 
-async def language(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def language(update, context):
 
     await update.message.reply_text(
-
         "🌏 LANGUAGE\n\n"
-
         "🇧🇩 বাংলা\n"
         "🇬🇧 English"
     )
@@ -2003,10 +2160,7 @@ async def language(
 # TEXT HANDLER
 # =========================================================
 
-async def text_handler(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE
-):
+async def text_handler(update, context):
 
     # Admin processing
     if update.effective_user.id == ADMIN_ID:
@@ -2038,59 +2192,36 @@ async def text_handler(
 
     if text == "💸 Balance":
 
-        await balance(
-            update,
-            context
-        )
+        await balance(update, context)
 
     elif text == "💰 Tasks":
 
-        await show_tasks(
-            update,
-            context
-        )
+        await show_tasks(update, context)
 
     elif text == "📤 Withdraw":
 
-        await withdraw(
-            update,
-            context
-        )
+        await withdraw(update, context)
 
     elif text == "👤 Profile":
 
-        await profile(
-            update,
-            context
-        )
+        await profile(update, context)
 
     elif text == "🏆 Top":
 
-        await top_users(
-            update,
-            context
-        )
+        await top_users(update, context)
 
     elif text == "🫂 My Referrals":
 
-        await referrals(
-            update,
-            context
-        )
+        await referrals(update, context)
 
     elif text == "🌏 Language":
 
-        await language(
-            update,
-            context
-        )
+        await language(update, context)
 
     else:
 
         await update.message.reply_text(
-
             "❓ Please select an option.",
-
             reply_markup=main_keyboard()
         )
 
@@ -2099,10 +2230,7 @@ async def text_handler(
 # ERROR
 # =========================================================
 
-async def error_handler(
-    update,
-    context
-):
+async def error_handler(update, context):
 
     logger.error(
         "Telegram error:",
@@ -2120,6 +2248,22 @@ def main():
 
         logger.error(
             "❌ BOT_TOKEN is missing!"
+        )
+
+        return
+
+    if not SUPABASE_URL:
+
+        logger.error(
+            "❌ SUPABASE_URL is missing!"
+        )
+
+        return
+
+    if not SUPABASE_KEY:
+
+        logger.error(
+            "❌ SUPABASE_KEY is missing!"
         )
 
         return
@@ -2150,7 +2294,7 @@ def main():
         )
     )
 
-    # Task select
+    # Task
     application.add_handler(
         CallbackQueryHandler(
             select_task,
@@ -2158,7 +2302,6 @@ def main():
         )
     )
 
-    # Task start
     application.add_handler(
         CallbackQueryHandler(
             start_task,
@@ -2166,7 +2309,6 @@ def main():
         )
     )
 
-    # Confirm
     application.add_handler(
         CallbackQueryHandler(
             confirm_submission,
