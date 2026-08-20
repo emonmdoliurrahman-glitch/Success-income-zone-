@@ -31,18 +31,16 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
-# Render Environment Variable থেকে Admin ID নেবে
-# না থাকলে আপনার বর্তমান Admin ID ব্যবহার করবে
 try:
     ADMIN_ID = int(os.getenv("ADMIN_ID", "7764329763"))
-except ValueError:
+except Exception:
     ADMIN_ID = 7764329763
 
 REFERRAL_PERCENT = 0.20
 
 try:
     PORT = int(os.getenv("PORT", "10000"))
-except ValueError:
+except Exception:
     PORT = 10000
 
 
@@ -72,10 +70,8 @@ def supabase_headers():
 
 def sb_get(table, params=None):
     try:
-        url = f"{SUPABASE_URL}/rest/v1/{table}"
-
         response = requests.get(
-            url,
+            f"{SUPABASE_URL}/rest/v1/{table}",
             headers=supabase_headers(),
             params=params or {},
             timeout=20,
@@ -83,7 +79,7 @@ def sb_get(table, params=None):
 
         if not response.ok:
             logger.error(
-                "Supabase GET error %s: %s",
+                "Supabase GET %s: %s",
                 response.status_code,
                 response.text,
             )
@@ -96,17 +92,13 @@ def sb_get(table, params=None):
         return []
 
 
-def sb_post(table, data, return_representation=False):
+def sb_post(table, data):
     try:
-        url = f"{SUPABASE_URL}/rest/v1/{table}"
-
         headers = supabase_headers()
-
-        if return_representation:
-            headers["Prefer"] = "return=representation"
+        headers["Prefer"] = "return=representation"
 
         response = requests.post(
-            url,
+            f"{SUPABASE_URL}/rest/v1/{table}",
             headers=headers,
             json=data,
             timeout=20,
@@ -114,7 +106,7 @@ def sb_post(table, data, return_representation=False):
 
         if not response.ok:
             logger.error(
-                "Supabase POST error %s: %s",
+                "Supabase POST %s: %s",
                 response.status_code,
                 response.text,
             )
@@ -132,13 +124,11 @@ def sb_post(table, data, return_representation=False):
 
 def sb_patch(table, params, data):
     try:
-        url = f"{SUPABASE_URL}/rest/v1/{table}"
-
         headers = supabase_headers()
         headers["Prefer"] = "return=representation"
 
         response = requests.patch(
-            url,
+            f"{SUPABASE_URL}/rest/v1/{table}",
             headers=headers,
             params=params,
             json=data,
@@ -147,7 +137,7 @@ def sb_patch(table, params, data):
 
         if not response.ok:
             logger.error(
-                "Supabase PATCH error %s: %s",
+                "Supabase PATCH %s: %s",
                 response.status_code,
                 response.text,
             )
@@ -165,10 +155,8 @@ def sb_patch(table, params, data):
 
 def sb_delete(table, params):
     try:
-        url = f"{SUPABASE_URL}/rest/v1/{table}"
-
         response = requests.delete(
-            url,
+            f"{SUPABASE_URL}/rest/v1/{table}",
             headers=supabase_headers(),
             params=params,
             timeout=20,
@@ -176,7 +164,7 @@ def sb_delete(table, params):
 
         if not response.ok:
             logger.error(
-                "Supabase DELETE error %s: %s",
+                "Supabase DELETE %s: %s",
                 response.status_code,
                 response.text,
             )
@@ -220,11 +208,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def run_health_server():
-
-    server = None
-
     try:
-
         server = HTTPServer(
             ("0.0.0.0", PORT),
             HealthHandler,
@@ -240,19 +224,9 @@ def run_health_server():
     except Exception:
         logger.exception("Health server crashed")
 
-    finally:
-
-        if server:
-            try:
-                server.server_close()
-            except Exception:
-                pass
-
-        logger.info("Health server stopped")
-
 
 # =========================================================
-# DATABASE HELPERS
+# USER DATABASE
 # =========================================================
 
 def get_user(tg_user):
@@ -268,23 +242,22 @@ def get_user(tg_user):
     )
 
     if rows:
-
         user = rows[0]
 
-        updated = {
+        update_data = {
             "first_name": tg_user.first_name or "",
             "last_name": tg_user.last_name or "",
             "username": tg_user.username or "",
         }
 
-        result = sb_patch(
+        updated = sb_patch(
             "bot_users",
             {"id": f"eq.{uid}"},
-            updated,
+            update_data,
         )
 
-        if result:
-            user = result[0]
+        if updated:
+            return updated[0]
 
         return user
 
@@ -304,7 +277,6 @@ def get_user(tg_user):
     result = sb_post(
         "bot_users",
         data,
-        return_representation=True,
     )
 
     if result:
@@ -335,7 +307,22 @@ def update_user(user_id, data):
     )
 
 
+# =========================================================
+# TASK DATABASE
+# =========================================================
+
 def get_tasks():
+
+    return sb_get(
+        "tasks",
+        {
+            "is_active": "eq.true",
+            "order": "id.asc",
+        },
+    )
+
+
+def get_all_tasks():
 
     return sb_get(
         "tasks",
@@ -392,7 +379,7 @@ def main_keyboard():
 
 def admin_keyboard():
 
-    keyboard = [
+    return InlineKeyboardMarkup([
         [
             InlineKeyboardButton(
                 "➕ Add Task",
@@ -435,16 +422,14 @@ def admin_keyboard():
                 callback_data="admin_withdrawals",
             ),
         ],
-    ]
-
-    return InlineKeyboardMarkup(keyboard)
+    ])
 
 
 # =========================================================
 # START
 # =========================================================
 
-async def start(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if not update.effective_user:
         return
@@ -453,6 +438,7 @@ async def start(update, context):
 
     user = get_user(tg_user)
 
+    # Referral
     if context.args:
 
         referral_id = context.args[0]
@@ -463,11 +449,7 @@ async def start(update, context):
 
             if referral_id != tg_user.id:
 
-                current_referrer = user.get(
-                    "referred_by"
-                )
-
-                if current_referrer is None:
+                if user.get("referred_by") is None:
 
                     referrer = get_user_by_id(
                         referral_id
@@ -507,10 +489,8 @@ async def balance(update, context):
     await update.message.reply_text(
 
         "💸 BALANCE\n\n"
-
         f"💰 Balance: "
         f"{float(user.get('balance', 0)):.2f} BDT\n\n"
-
         f"🎁 Referral Earnings: "
         f"{float(user.get('referral_earnings', 0)):.2f} BDT"
     )
@@ -532,35 +512,27 @@ async def profile(update, context):
         else "No username"
     )
 
-    referral_rows = sb_get(
+    referrals = sb_get(
         "bot_users",
         {
             "referred_by":
-                f"eq.{user['id']}",
-            "select": "id",
+                f"eq.{user['id']",
+            "select":
+                "id",
         },
-    )
-
-    referral_count = len(
-        referral_rows
     )
 
     await update.message.reply_text(
 
         "👤 PROFILE\n\n"
-
         f"🆔 ID: {user['id']}\n"
         f"👤 Username: {username}\n"
-
         f"💰 Balance: "
         f"{float(user.get('balance', 0)):.2f} BDT\n"
-
         f"👥 Referrals: "
-        f"{referral_count}\n"
-
+        f"{len(referrals)}\n"
         f"🎁 Referral Earnings: "
         f"{float(user.get('referral_earnings', 0)):.2f} BDT\n"
-
         f"📅 Joined: "
         f"{user.get('joined_at', 'N/A')}"
     )
@@ -578,12 +550,13 @@ async def referrals(update, context):
 
     bot = await context.bot.get_me()
 
-    referral_rows = sb_get(
+    rows = sb_get(
         "bot_users",
         {
             "referred_by":
                 f"eq.{user['id']}",
-            "select": "id",
+            "select":
+                "id",
         },
     )
 
@@ -595,27 +568,18 @@ async def referrals(update, context):
     await update.message.reply_text(
 
         "🫂 MY REFERRALS\n\n"
-
-        f"👥 Referrals: "
-        f"{len(referral_rows)}\n"
-
+        f"👥 Referrals: {len(rows)}\n"
         f"🎁 Earnings: "
         f"{float(user.get('referral_earnings', 0)):.2f} BDT\n\n"
-
-        f"🔗 Your Referral Link:\n"
-        f"{link}"
+        f"🔗 Your Referral Link:\n{link}"
     )
 
 
 # =========================================================
-# TASK LIST
+# SHOW TASKS
 # =========================================================
 
 async def show_tasks(update, context):
-
-    user = get_user(
-        update.effective_user
-    )
 
     tasks = get_tasks()
 
@@ -632,23 +596,6 @@ async def show_tasks(update, context):
 
     for task in tasks:
 
-        completed = sb_get(
-            "submissions",
-            {
-                "user_id":
-                    f"eq.{user['id']}",
-                "task_id":
-                    f"eq.{task['id']}",
-                "status":
-                    "eq.approved",
-                "select": "id",
-                "limit": "1",
-            },
-        )
-
-        if completed:
-            continue
-
         reward = float(
             task.get("reward", 0)
         )
@@ -660,15 +607,6 @@ async def show_tasks(update, context):
                 f"select_task_{task['id']}",
             )
         ])
-
-    if not keyboard:
-
-        await update.message.reply_text(
-            "📋 Tasks\n\n"
-            "❌ আপনি সব available Task complete করেছেন।"
-        )
-
-        return
 
     await update.message.reply_text(
         "📋 Tasks\n\n"
@@ -685,6 +623,7 @@ async def show_tasks(update, context):
 async def select_task(update, context):
 
     query = update.callback_query
+
     await query.answer()
 
     task_id = query.data.replace(
@@ -706,24 +645,42 @@ async def select_task(update, context):
         task.get("reward", 0)
     )
 
+    amount = task.get(
+        "amount",
+        "",
+    )
+
     review_hours = task.get(
         "review_hours",
         0,
     )
 
+    description = task.get(
+        "description",
+        "",
+    )
+
+    report_instruction = task.get(
+        "report_instruction",
+        "",
+    )
+
     text = (
         f"📋 Task: {task['title']}\n\n"
-        f"💰 Reward: {reward:.2f} BDT\n\n"
+        f"💰 Amount: {amount}\n"
+        f"💵 Reward: {reward:.2f} BDT\n\n"
         f"⏳ Review time: {review_hours} hours\n\n"
-        "📄 Please complete the task and "
-        "then submit your Facebook UID and report."
+        f"📄 Description:\n"
+        f"{description}\n\n"
+        f"✍️ Report instruction:\n"
+        f"{report_instruction}"
     )
 
     keyboard = [[
         InlineKeyboardButton(
-            "▶️ Start",
+            "🚀 Start",
             callback_data=
-            f"start_task_{task_id}",
+            f"start_task_{task['id']}",
         )
     ]]
 
@@ -741,11 +698,8 @@ async def select_task(update, context):
 async def start_task(update, context):
 
     query = update.callback_query
-    await query.answer()
 
-    user = get_user(
-        query.from_user
-    )
+    await query.answer()
 
     task_id = query.data.replace(
         "start_task_",
@@ -762,36 +716,138 @@ async def start_task(update, context):
 
         return
 
-    pending = sb_get(
-        "submissions",
-        {
-            "user_id":
-                f"eq.{user['id']}",
-            "task_id":
-                f"eq.{task['id']}",
-            "status":
-                "eq.pending",
-            "select": "id",
-            "limit": "1",
-        },
-    )
+    # IMPORTANT:
+    # এখানে pending check নেই।
+    # একই Task বারবার করা যাবে।
 
-    if pending:
+    context.user_data.clear()
 
-        await query.message.reply_text(
-            "⏳ You already submitted this task.\n"
-            "Please wait for review."
-        )
+    context.user_data[
+        "task_id"
+    ] = int(task_id)
 
-        return
-
-    context.user_data["task_id"] = task_id
-    context.user_data["task_step"] = "uid"
+    context.user_data[
+        "task_step"
+    ] = "uid"
 
     await query.message.reply_text(
         "🚀 Task Started!\n\n"
         "Send your Facebook UID:"
     )
+
+
+# =========================================================
+# TASK TEXT FLOW
+# =========================================================
+
+async def process_task_text(update, context):
+
+    step = context.user_data.get(
+        "task_step"
+    )
+
+    if not step:
+        return False
+
+    text = update.message.text.strip()
+
+    # -----------------------------------------------------
+    # UID
+    # -----------------------------------------------------
+
+    if step == "uid":
+
+        if len(text) < 3:
+
+            await update.message.reply_text(
+                "❌ Please send a valid Facebook UID."
+            )
+
+            return True
+
+        context.user_data[
+            "task_uid"
+        ] = text
+
+        context.user_data[
+            "task_step"
+        ] = "report"
+
+        task_id = context.user_data.get(
+            "task_id"
+        )
+
+        task = get_task(task_id)
+
+        report_instruction = ""
+
+        if task:
+            report_instruction = task.get(
+                "report_instruction",
+                "",
+            )
+
+        message = (
+            "👤 UID received.\n\n"
+        )
+
+        if report_instruction:
+            message += (
+                "📋 Please send your required report:\n\n"
+                f"{report_instruction}"
+            )
+        else:
+            message += (
+                "📋 Please send your report:"
+            )
+
+        await update.message.reply_text(
+            message
+        )
+
+        return True
+
+    # -----------------------------------------------------
+    # REPORT
+    # -----------------------------------------------------
+
+    if step == "report":
+
+        context.user_data[
+            "task_report"
+        ] = text
+
+        context.user_data[
+            "task_step"
+        ] = "confirm"
+
+        await update.message.reply_text(
+
+            "📋 Report received.\n\n"
+            "Please confirm your submission:",
+
+            reply_markup=
+            InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton(
+                        "✅ Submit",
+                        callback_data=
+                        "confirm_submission",
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "❌ Cancel",
+                        callback_data=
+                        "cancel_submission",
+                    )
+                ],
+            ]),
+        )
+
+        return True
+
+    return False
 
 
 # =========================================================
@@ -801,7 +857,11 @@ async def start_task(update, context):
 async def confirm_submission(update, context):
 
     query = update.callback_query
+
     await query.answer()
+
+    if query.from_user.id != update.effective_user.id:
+        return
 
     task_id = context.user_data.get(
         "task_id"
@@ -815,10 +875,10 @@ async def confirm_submission(update, context):
         "task_report"
     )
 
-    if not task_id:
+    if not task_id or not uid_value or not report:
 
         await query.message.reply_text(
-            "❌ Task session expired."
+            "❌ Submission incomplete."
         )
 
         return
@@ -833,18 +893,11 @@ async def confirm_submission(update, context):
 
         return
 
-    if not uid_value or not report:
-
-        await query.message.reply_text(
-            "❌ Submission incomplete."
-        )
-
-        return
-
     user = get_user(
         query.from_user
     )
 
+    # একই UID পুরো system-এ আগেও ব্যবহার হয়েছে কিনা
     existing_uid = sb_get(
         "submissions",
         {
@@ -865,6 +918,10 @@ async def confirm_submission(update, context):
 
         return
 
+    reward = float(
+        task.get("reward", 0)
+    )
+
     data = {
         "user_id":
             user["id"],
@@ -879,7 +936,7 @@ async def confirm_submission(update, context):
             report,
 
         "reward":
-            float(task["reward"]),
+            reward,
 
         "status":
             "pending",
@@ -891,13 +948,13 @@ async def confirm_submission(update, context):
     result = sb_post(
         "submissions",
         data,
-        return_representation=True,
     )
 
     if not result:
 
         await query.message.reply_text(
-            "❌ Could not submit task. Please try again."
+            "❌ Could not submit task.\n"
+            "Please try again."
         )
 
         return
@@ -911,9 +968,11 @@ async def confirm_submission(update, context):
         "⏳ Task Pending Review"
     )
 
+    # Admin notification
     try:
 
         await context.bot.send_message(
+
             chat_id=ADMIN_ID,
 
             text=(
@@ -922,7 +981,7 @@ async def confirm_submission(update, context):
                 f"👤 User ID: {user['id']}\n"
                 f"👤 Username: @{user.get('username') or 'None'}\n\n"
                 f"📋 Task: {task['title']}\n"
-                f"💰 Reward: {float(task['reward']):.2f} BDT\n\n"
+                f"💰 Reward: {reward:.2f} BDT\n\n"
                 f"🆔 Facebook UID: {uid_value}\n\n"
                 f"📄 Report:\n{report}"
             ),
@@ -951,12 +1010,30 @@ async def confirm_submission(update, context):
 
 
 # =========================================================
+# CANCEL SUBMISSION
+# =========================================================
+
+async def cancel_submission(update, context):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    context.user_data.clear()
+
+    await query.message.reply_text(
+        "❌ Submission cancelled."
+    )
+
+
+# =========================================================
 # APPROVE / REJECT
 # =========================================================
 
 async def review_submission(update, context):
 
     query = update.callback_query
+
     await query.answer()
 
     if query.from_user.id != ADMIN_ID:
@@ -997,7 +1074,7 @@ async def review_submission(update, context):
 
         return
 
-    if submission["status"] != "pending":
+    if submission.get("status") != "pending":
 
         await query.message.reply_text(
             "⚠️ Already reviewed."
@@ -1037,6 +1114,10 @@ async def review_submission(update, context):
 
         return
 
+    # -----------------------------------------------------
+    # APPROVED
+    # -----------------------------------------------------
+
     if action == "approved":
 
         user = get_user_by_id(
@@ -1067,6 +1148,7 @@ async def review_submission(update, context):
             },
         )
 
+        # Referral commission
         referrer_id = user.get(
             "referred_by"
         )
@@ -1116,9 +1198,7 @@ async def review_submission(update, context):
         await query.message.reply_text(
 
             "✅ TASK APPROVED\n\n"
-
             f"👤 User ID: {user_id}\n"
-
             f"💰 Reward Added: "
             f"{reward:.2f} BDT"
         )
@@ -1134,15 +1214,9 @@ async def review_submission(update, context):
                 chat_id=user_id,
 
                 text=(
-
                     "🎉 Task Approved!\n\n"
-
-                    f"📋 Task: "
-                    f"{submission.get('task_id')}\n"
-
                     f"💰 Reward: "
                     f"{reward:.2f} BDT\n\n"
-
                     f"💵 Your Balance: "
                     f"{float(final_user.get('balance', 0)):.2f} BDT"
                 ),
@@ -1153,14 +1227,16 @@ async def review_submission(update, context):
                 "User approval notification error"
             )
 
+    # -----------------------------------------------------
+    # REJECTED
+    # -----------------------------------------------------
+
     else:
 
         await query.message.reply_text(
 
             "❌ TASK REJECTED\n\n"
-
-            f"👤 User ID: "
-            f"{user_id}"
+            f"👤 User ID: {user_id}"
         )
 
         try:
@@ -1170,12 +1246,9 @@ async def review_submission(update, context):
                 chat_id=user_id,
 
                 text=(
-
                     "❌ Task Rejected\n\n"
-
                     f"📋 Task ID: "
                     f"{submission.get('task_id')}\n\n"
-
                     "💰 No reward was added."
                 ),
             )
@@ -1201,10 +1274,8 @@ async def admin_command(update, context):
         return
 
     await update.message.reply_text(
-
         "👨‍💻 ADMIN PANEL\n\n"
         "👇 Select an option:",
-
         reply_markup=admin_keyboard(),
     )
 
@@ -1216,6 +1287,7 @@ async def admin_command(update, context):
 async def admin_callback(update, context):
 
     query = update.callback_query
+
     await query.answer()
 
     if query.from_user.id != ADMIN_ID:
@@ -1228,26 +1300,34 @@ async def admin_callback(update, context):
 
     action = query.data
 
+    # -----------------------------------------------------
     # ADD TASK
+    # -----------------------------------------------------
+
     if action == "admin_add_task":
+
+        context.user_data.clear()
 
         context.user_data[
             "admin_state"
-        ] = "task_name"
+        ] = "task_title"
 
         await query.message.reply_text(
             "➕ ADD TASK\n\n"
-            "📌 Send Task Name:"
+            "📌 Send Task Title:"
         )
 
         return
 
+    # -----------------------------------------------------
     # ALL TASKS
+    # -----------------------------------------------------
+
     if action == "admin_all_tasks":
 
-        task_list = get_tasks()
+        tasks = get_all_tasks()
 
-        if not task_list:
+        if not tasks:
 
             await query.message.reply_text(
                 "📋 No tasks available."
@@ -1257,28 +1337,34 @@ async def admin_callback(update, context):
 
         text = "📋 ALL TASKS\n\n"
 
-        for task in task_list:
+        for task in tasks:
 
             text += (
-                f"🆔 Task ID: {task['id']}\n"
+                f"🆔 ID: {task['id']}\n"
                 f"📌 {task['title']}\n"
-                f"💰 {float(task['reward']):.2f} BDT\n"
+                f"💰 Amount: "
+                f"{task.get('amount', '')}\n"
+                f"💵 Reward: "
+                f"{float(task.get('reward', 0)):.2f} BDT\n"
                 f"⏳ Review: "
-                f"{task.get('review_hours', 0)} hours\n\n"
+                f"{task.get('review_hours', 0)} hours\n"
+                f"🟢 Active: "
+                f"{task.get('is_active', True)}\n\n"
             )
 
-        await query.message.reply_text(
-            text
-        )
+        await query.message.reply_text(text)
 
         return
 
+    # -----------------------------------------------------
     # DELETE TASK
+    # -----------------------------------------------------
+
     if action == "admin_delete_task":
 
-        task_list = get_tasks()
+        tasks = get_all_tasks()
 
-        if not task_list:
+        if not tasks:
 
             await query.message.reply_text(
                 "❌ No tasks."
@@ -1288,7 +1374,7 @@ async def admin_callback(update, context):
 
         text = "🗑 DELETE TASK\n\n"
 
-        for task in task_list:
+        for task in tasks:
 
             text += (
                 f"🆔 {task['id']}\n"
@@ -1306,7 +1392,10 @@ async def admin_callback(update, context):
 
         return
 
+    # -----------------------------------------------------
     # PENDING
+    # -----------------------------------------------------
+
     if action == "admin_pending":
 
         pending = sb_get(
@@ -1330,33 +1419,29 @@ async def admin_callback(update, context):
         for s in pending:
 
             keyboard = [[
-
                 InlineKeyboardButton(
                     "✅ Approve",
                     callback_data=
                     f"approve_{s['id']}",
                 ),
-
                 InlineKeyboardButton(
                     "❌ Reject",
                     callback_data=
                     f"reject_{s['id']}",
                 ),
-
             ]]
 
             await query.message.reply_text(
 
                 "📥 PENDING SUBMISSION\n\n"
-
                 f"🆔 Submission: {s['id']}\n"
                 f"👤 User: {s['user_id']}\n"
                 f"📋 Task ID: {s['task_id']}\n"
                 f"💰 Reward: "
-                f"{float(s['reward']):.2f} BDT\n"
+                f"{float(s.get('reward', 0)):.2f} BDT\n"
                 f"🆔 UID: {s['facebook_uid']}\n\n"
                 f"📄 Report:\n"
-                f"{s['written_report']}",
+                f"{s.get('written_report', '')}",
 
                 reply_markup=
                 InlineKeyboardMarkup(keyboard),
@@ -1364,10 +1449,13 @@ async def admin_callback(update, context):
 
         return
 
+    # -----------------------------------------------------
     # USERS
+    # -----------------------------------------------------
+
     if action == "admin_users":
 
-        user_list = sb_get(
+        users = sb_get(
             "bot_users",
             {
                 "select":
@@ -1376,16 +1464,16 @@ async def admin_callback(update, context):
         )
 
         await query.message.reply_text(
-
             "👥 USERS\n\n"
-
-            f"Total Users: "
-            f"{len(user_list)}"
+            f"Total Users: {len(users)}"
         )
 
         return
 
+    # -----------------------------------------------------
     # ADD BALANCE
+    # -----------------------------------------------------
+
     if action == "admin_add_balance":
 
         context.user_data[
@@ -1393,19 +1481,19 @@ async def admin_callback(update, context):
         ] = "add_balance"
 
         await query.message.reply_text(
-
             "💰 ADD BALANCE\n\n"
-
             "Format:\n"
             "USER_ID | AMOUNT\n\n"
-
             "Example:\n"
             "7764329763 | 100"
         )
 
         return
 
+    # -----------------------------------------------------
     # REMOVE BALANCE
+    # -----------------------------------------------------
+
     if action == "admin_remove_balance":
 
         context.user_data[
@@ -1413,16 +1501,17 @@ async def admin_callback(update, context):
         ] = "remove_balance"
 
         await query.message.reply_text(
-
             "➖ REMOVE BALANCE\n\n"
-
             "Format:\n"
             "USER_ID | AMOUNT"
         )
 
         return
 
+    # -----------------------------------------------------
     # WITHDRAWALS
+    # -----------------------------------------------------
+
     if action == "admin_withdrawals":
 
         pending = sb_get(
@@ -1443,22 +1532,38 @@ async def admin_callback(update, context):
 
             return
 
-        text = "📤 PENDING WITHDRAWALS\n\n"
-
         for w in pending:
 
-            text += (
-                f"🆔 {w['id']}\n"
+            keyboard = [[
+                InlineKeyboardButton(
+                    "✅ Approve",
+                    callback_data=
+                    f"approve_withdraw_{w['id']}",
+                ),
+                InlineKeyboardButton(
+                    "❌ Reject",
+                    callback_data=
+                    f"reject_withdraw_{w['id']}",
+                ),
+            ]]
+
+            await query.message.reply_text(
+
+                "📤 PENDING WITHDRAWAL\n\n"
+                f"🆔 Request: {w['id']}\n"
                 f"👤 User: {w['user_id']}\n"
                 f"💰 Amount: "
-                f"{float(w['amount']):.2f} BDT\n"
+                f"{float(w.get('amount', 0)):.2f} BDT\n"
                 f"💳 Method: "
-                f"{w.get('method', 'Pending')}\n\n"
+                f"{w.get('method', '')}\n"
+                f"🏦 Account: "
+                f"{w.get('account_number', '')}",
+
+                reply_markup=
+                InlineKeyboardMarkup(keyboard),
             )
 
-        await query.message.reply_text(
-            text
-        )
+        return
 
 
 # =========================================================
@@ -1479,11 +1584,38 @@ async def process_admin_text(update, context):
 
     text = update.message.text.strip()
 
-    # TASK NAME
-    if state == "task_name":
+    # -----------------------------------------------------
+    # TASK TITLE
+    # -----------------------------------------------------
+
+    if state == "task_title":
 
         context.user_data[
-            "new_task_name"
+            "new_task_title"
+        ] = text
+
+        context.user_data[
+            "admin_state"
+        ] = "task_amount"
+
+        await update.message.reply_text(
+            "💰 Send Task Amount:\n\n"
+            "Example:\n"
+            "1\n"
+            "5\n"
+            "100"
+        )
+
+        return True
+
+    # -----------------------------------------------------
+    # TASK AMOUNT
+    # -----------------------------------------------------
+
+    if state == "task_amount":
+
+        context.user_data[
+            "new_task_amount"
         ] = text
 
         context.user_data[
@@ -1492,12 +1624,18 @@ async def process_admin_text(update, context):
 
         await update.message.reply_text(
             "💵 Send Reward in BDT:\n\n"
-            "Example: 10"
+            "Example:\n"
+            "10\n"
+            "25.50\n"
+            "5.80"
         )
 
         return True
 
+    # -----------------------------------------------------
     # TASK REWARD
+    # -----------------------------------------------------
+
     if state == "task_reward":
 
         try:
@@ -1507,11 +1645,11 @@ async def process_admin_text(update, context):
             if reward <= 0:
                 raise ValueError
 
-        except ValueError:
+        except Exception:
 
             await update.message.reply_text(
-                "❌ Invalid amount.\n\n"
-                "Example: 10 or 25.50"
+                "❌ Invalid Reward.\n\n"
+                "Example: 5.80"
             )
 
             return True
@@ -1522,16 +1660,64 @@ async def process_admin_text(update, context):
 
         context.user_data[
             "admin_state"
-        ] = "task_review"
+        ] = "task_uid"
 
         await update.message.reply_text(
-            "⏳ Send Review Time in hours:\n\n"
-            "Example: 12"
+            "🆔 UID Requirement:\n\n"
+            "Send YES if Facebook UID is required.\n"
+            "Send NO if UID is not required."
         )
 
         return True
 
+    # -----------------------------------------------------
+    # UID
+    # -----------------------------------------------------
+
+    if state == "task_uid":
+
+        value = text.lower()
+
+        if value not in [
+            "yes",
+            "no",
+            "হ্যাঁ",
+            "না",
+        ]:
+
+            await update.message.reply_text(
+                "❌ Please send YES or NO."
+            )
+
+            return True
+
+        # Store as text to match a text/varchar uid column.
+        if value in ["yes", "হ্যাঁ"]:
+            uid_value = "yes"
+        else:
+            uid_value = "no"
+
+        context.user_data[
+            "new_task_uid"
+        ] = uid_value
+
+        context.user_data[
+            "admin_state"
+        ] = "task_review"
+
+        await update.message.reply_text(
+            "⏳ Send Review Time in hours:\n\n"
+            "Example:\n"
+            "12\n"
+            "15"
+        )
+
+        return True
+
+    # -----------------------------------------------------
     # REVIEW HOURS
+    # -----------------------------------------------------
+
     if state == "task_review":
 
         try:
@@ -1541,11 +1727,10 @@ async def process_admin_text(update, context):
             if review_hours < 0:
                 raise ValueError
 
-        except ValueError:
+        except Exception:
 
             await update.message.reply_text(
-                "❌ Invalid review hours.\n\n"
-                "Example: 12"
+                "❌ Invalid Review Hours."
             )
 
             return True
@@ -1564,7 +1749,10 @@ async def process_admin_text(update, context):
 
         return True
 
+    # -----------------------------------------------------
     # DESCRIPTION
+    # -----------------------------------------------------
+
     if state == "task_description":
 
         context.user_data[
@@ -1581,13 +1769,21 @@ async def process_admin_text(update, context):
 
         return True
 
-    # REPORT
+    # -----------------------------------------------------
+    # REPORT INSTRUCTION
+    # -----------------------------------------------------
+
     if state == "task_report":
 
         data = {
             "title":
                 context.user_data[
-                    "new_task_name"
+                    "new_task_title"
+                ],
+
+            "amount":
+                context.user_data[
+                    "new_task_amount"
                 ],
 
             "reward":
@@ -1595,22 +1791,40 @@ async def process_admin_text(update, context):
                     "new_task_reward"
                 ],
 
+            "uid":
+                context.user_data[
+                    "new_task_uid"
+                ],
+
             "review_hours":
                 context.user_data[
                     "new_task_review"
                 ],
+
+            "description":
+                context.user_data[
+                    "new_task_description"
+                ],
+
+            "report_instruction":
+                text,
+
+            "is_active":
+                True,
+
+            "created_at":
+                datetime.now().isoformat(),
         }
 
         result = sb_post(
             "tasks",
             data,
-            return_representation=True,
         )
 
         if not result:
 
             await update.message.reply_text(
-                "❌ Task save হয়নি।\n"
+                "❌ Task save হয়নি।\n\n"
                 "Supabase logs দেখুন।"
             )
 
@@ -1623,24 +1837,28 @@ async def process_admin_text(update, context):
         await update.message.reply_text(
 
             "✅ TASK ADDED SUCCESSFULLY!\n\n"
-
             f"🆔 Task ID: {task['id']}\n"
             f"📌 Task: {task['title']}\n"
-            f"💰 Reward: "
-            f"{float(task['reward']):.2f} BDT\n"
+            f"💰 Amount: {task.get('amount', '')}\n"
+            f"💵 Reward: "
+            f"{float(task.get('reward', 0)):.2f} BDT\n"
+            f"🆔 UID: {task.get('uid', '')}\n"
             f"⏳ Review: "
-            f"{task['review_hours']} hours"
+            f"{task.get('review_hours', 0)} hours"
         )
 
         return True
 
+    # -----------------------------------------------------
     # DELETE TASK
+    # -----------------------------------------------------
+
     if state == "delete_task":
 
         try:
             task_id = int(text)
 
-        except ValueError:
+        except Exception:
 
             await update.message.reply_text(
                 "❌ Invalid Task ID."
@@ -1677,15 +1895,16 @@ async def process_admin_text(update, context):
         context.user_data.clear()
 
         await update.message.reply_text(
-
             "✅ Task Deleted\n\n"
-
             f"📌 {task['title']}"
         )
 
         return True
 
+    # -----------------------------------------------------
     # ADD BALANCE
+    # -----------------------------------------------------
+
     if state == "add_balance":
 
         try:
@@ -1732,14 +1951,10 @@ async def process_admin_text(update, context):
             context.user_data.clear()
 
             await update.message.reply_text(
-
                 "✅ Balance Added\n\n"
-
                 f"👤 User: {user_id}\n"
-
                 f"➕ Added: "
                 f"{amount:.2f} BDT\n"
-
                 f"💵 New Balance: "
                 f"{new_balance:.2f} BDT"
             )
@@ -1747,16 +1962,16 @@ async def process_admin_text(update, context):
         except Exception:
 
             await update.message.reply_text(
-
                 "❌ Wrong Format.\n\n"
-
-                "Correct:\n"
                 "USER_ID | AMOUNT"
             )
 
         return True
 
+    # -----------------------------------------------------
     # REMOVE BALANCE
+    # -----------------------------------------------------
+
     if state == "remove_balance":
 
         try:
@@ -1804,14 +2019,10 @@ async def process_admin_text(update, context):
             context.user_data.clear()
 
             await update.message.reply_text(
-
                 "✅ Balance Removed\n\n"
-
                 f"👤 User: {user_id}\n"
-
                 f"➖ Removed: "
                 f"{amount:.2f} BDT\n"
-
                 f"💵 Balance: "
                 f"{new_balance:.2f} BDT"
             )
@@ -1820,83 +2031,8 @@ async def process_admin_text(update, context):
 
             await update.message.reply_text(
                 "❌ Wrong Format.\n\n"
-                "Correct:\n"
                 "USER_ID | AMOUNT"
             )
-
-        return True
-
-    return False
-
-
-# =========================================================
-# TASK USER TEXT FLOW
-# =========================================================
-
-async def process_task_text(update, context):
-
-    step = context.user_data.get(
-        "task_step"
-    )
-
-    if not step:
-        return False
-
-    text = update.message.text.strip()
-
-    # UID
-    if step == "uid":
-
-        if len(text) < 3:
-
-            await update.message.reply_text(
-                "❌ Please send a valid Facebook UID."
-            )
-
-            return True
-
-        context.user_data[
-            "task_uid"
-        ] = text
-
-        context.user_data[
-            "task_step"
-        ] = "report"
-
-        await update.message.reply_text(
-            "👤 UID received.\n\n"
-            "📋 Please send your task report:"
-        )
-
-        return True
-
-    # REPORT
-    if step == "report":
-
-        context.user_data[
-            "task_report"
-        ] = text
-
-        context.user_data[
-            "task_step"
-        ] = "confirm"
-
-        await update.message.reply_text(
-
-            "📋 Report received.\n\n"
-            "Please confirm your submission:",
-
-            reply_markup=
-            InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton(
-                        "✅ Submit",
-                        callback_data=
-                        "confirm_submission",
-                    )
-                ]
-            ]),
-        )
 
         return True
 
@@ -1926,178 +2062,449 @@ async def withdraw(update, context):
 
         return
 
+    context.user_data.clear()
+
     context.user_data[
-        "withdraw"
-    ] = True
+        "withdraw_step"
+    ] = "amount"
 
     await update.message.reply_text(
-
         "📤 WITHDRAW\n\n"
-
         f"💰 Available Balance: "
         f"{balance_value:.2f} BDT\n\n"
-
         "Send withdrawal amount:"
     )
 
 
 # =========================================================
-# WITHDRAW PROCESS
+# WITHDRAW FLOW
 # =========================================================
 
 async def process_withdraw(update, context):
 
-    if not context.user_data.get(
-        "withdraw"
-    ):
+    step = context.user_data.get(
+        "withdraw_step"
+    )
 
+    if not step:
         return False
 
-    user = get_user(
-        update.effective_user
-    )
+    text = update.message.text.strip()
 
-    try:
+    # Amount
+    if step == "amount":
+
+        try:
+
+            amount = float(text)
+
+            if amount <= 0:
+                raise ValueError
+
+        except Exception:
+
+            await update.message.reply_text(
+                "❌ Invalid amount."
+            )
+
+            return True
+
+        user = get_user(
+            update.effective_user
+        )
+
+        balance_value = float(
+            user.get("balance", 0)
+        )
+
+        if amount > balance_value:
+
+            await update.message.reply_text(
+                f"❌ Insufficient balance.\n\n"
+                f"Available: "
+                f"{balance_value:.2f} BDT"
+            )
+
+            return True
+
+        context.user_data[
+            "withdraw_amount"
+        ] = amount
+
+        context.user_data[
+            "withdraw_step"
+        ] = "method"
+
+        await update.message.reply_text(
+            "💳 Send withdrawal method:\n\n"
+            "Example:\n"
+            "bKash\n"
+            "Nagad\n"
+            "Rocket"
+        )
+
+        return True
+
+    # Method
+    if step == "method":
+
+        context.user_data[
+            "withdraw_method"
+        ] = text
+
+        context.user_data[
+            "withdraw_step"
+        ] = "account"
+
+        await update.message.reply_text(
+            "🏦 Send your account number:"
+        )
+
+        return True
+
+    # Account
+    if step == "account":
+
+        account_number = text
 
         amount = float(
-            update.message.text.strip()
+            context.user_data[
+                "withdraw_amount"
+            ]
         )
 
-    except ValueError:
+        method = context.user_data[
+            "withdraw_method"
+        ]
 
-        await update.message.reply_text(
-            "❌ Invalid amount."
+        user = get_user(
+            update.effective_user
         )
 
-        return True
-
-    balance_value = float(
-        user.get("balance", 0)
-    )
-
-    if amount <= 0:
-
-        await update.message.reply_text(
-            "❌ Invalid amount."
+        balance_value = float(
+            user.get("balance", 0)
         )
 
-        return True
+        if amount > balance_value:
 
-    if amount > balance_value:
+            context.user_data.clear()
 
-        await update.message.reply_text(
-            f"❌ Insufficient balance.\n\n"
-            f"Available: "
-            f"{balance_value:.2f} BDT"
+            await update.message.reply_text(
+                "❌ Insufficient balance."
+            )
+
+            return True
+
+        new_balance = (
+            balance_value - amount
         )
 
-        return True
+        # First create withdrawal
+        data = {
+            "user_id":
+                user["id"],
 
-    new_balance = (
-        balance_value - amount
-    )
+            "method":
+                method,
 
-    updated = update_user(
-        user["id"],
-        {
-            "balance":
-                new_balance
-        },
-    )
+            "account_number":
+                account_number,
 
-    if updated is None:
+            "amount":
+                amount,
 
-        await update.message.reply_text(
-            "❌ Balance update failed."
+            "status":
+                "pending",
+
+            "created_at":
+                datetime.now().isoformat(),
+        }
+
+        result = sb_post(
+            "withdrawals",
+            data,
         )
 
-        return True
+        if not result:
 
-    data = {
-        "user_id":
-            user["id"],
+            await update.message.reply_text(
+                "❌ Withdrawal request তৈরি হয়নি।"
+            )
 
-        "amount":
-            amount,
+            return True
 
-        "method":
-            "Pending",
-
-        "status":
-            "pending",
-
-        "created_at":
-            datetime.now().isoformat(),
-    }
-
-    result = sb_post(
-        "withdrawals",
-        data,
-        return_representation=True,
-    )
-
-    if not result:
-
-        update_user(
+        # Deduct balance only after request created
+        updated = update_user(
             user["id"],
             {
                 "balance":
-                    balance_value
+                    new_balance
             },
         )
 
+        if not updated:
+
+            # Remove withdrawal if balance update fails
+            withdrawal_id = result[0]["id"]
+
+            sb_delete(
+                "withdrawals",
+                {
+                    "id":
+                        f"eq.{withdrawal_id}"
+                },
+            )
+
+            await update.message.reply_text(
+                "❌ Balance update failed."
+            )
+
+            return True
+
+        withdrawal = result[0]
+
+        context.user_data.clear()
+
         await update.message.reply_text(
-            "❌ Withdrawal request তৈরি হয়নি।"
+
+            "✅ Withdrawal Request Submitted!\n\n"
+            f"💰 Amount: "
+            f"{amount:.2f} BDT\n"
+            f"💳 Method: {method}\n"
+            f"🏦 Account: {account_number}\n"
+            f"🆔 Request ID: "
+            f"{withdrawal['id']}\n\n"
+            "⏳ Please wait for Admin review."
         )
+
+        # Admin notification
+        try:
+
+            await context.bot.send_message(
+
+                chat_id=ADMIN_ID,
+
+                text=(
+                    "📤 NEW WITHDRAWAL\n\n"
+                    f"🆔 Request: "
+                    f"{withdrawal['id']}\n"
+                    f"👤 User: "
+                    f"{user['id']}\n"
+                    f"💰 Amount: "
+                    f"{amount:.2f} BDT\n"
+                    f"💳 Method: {method}\n"
+                    f"🏦 Account: {account_number}"
+                ),
+            )
+
+        except Exception:
+            logger.exception(
+                "Withdrawal admin notification error"
+            )
 
         return True
 
-    withdrawal = result[0]
+    return False
 
-    context.user_data.clear()
 
-    await update.message.reply_text(
+# =========================================================
+# WITHDRAW APPROVE / REJECT
+# =========================================================
 
-        "✅ Withdrawal Request Submitted!\n\n"
+async def review_withdrawal(update, context):
 
-        f"💰 Amount: "
-        f"{amount:.2f} BDT\n"
+    query = update.callback_query
 
-        f"🆔 Request ID: "
-        f"{withdrawal['id']}\n\n"
+    await query.answer()
 
-        "⏳ Please wait for Admin review."
+    if query.from_user.id != ADMIN_ID:
+
+        await query.message.reply_text(
+            "❌ Access denied."
+        )
+
+        return
+
+    if query.data.startswith(
+        "approve_withdraw_"
+    ):
+
+        withdrawal_id = query.data.replace(
+            "approve_withdraw_",
+            "",
+        )
+
+        action = "approved"
+
+    else:
+
+        withdrawal_id = query.data.replace(
+            "reject_withdraw_",
+            "",
+        )
+
+        action = "rejected"
+
+    rows = sb_get(
+        "withdrawals",
+        {
+            "id":
+                f"eq.{withdrawal_id}",
+            "limit":
+                "1",
+        },
     )
 
-    try:
+    if not rows:
 
-        await context.bot.send_message(
-
-            chat_id=ADMIN_ID,
-
-            text=(
-
-                "📤 NEW WITHDRAWAL\n\n"
-
-                f"🆔 Request: "
-                f"{withdrawal['id']}\n"
-
-                f"👤 User: "
-                f"{user['id']}\n"
-
-                f"💰 Amount: "
-                f"{amount:.2f} BDT\n"
-
-                f"💳 Method: Pending"
-            ),
+        await query.message.reply_text(
+            "❌ Withdrawal not found."
         )
 
-    except Exception:
-        logger.exception(
-            "Withdrawal admin notification error"
+        return
+
+    withdrawal = rows[0]
+
+    if withdrawal.get("status") != "pending":
+
+        await query.message.reply_text(
+            "⚠️ Already reviewed."
         )
 
-    return True
+        return
+
+    user_id = withdrawal["user_id"]
+
+    amount = float(
+        withdrawal.get("amount", 0)
+    )
+
+    # APPROVE
+    if action == "approved":
+
+        updated = sb_patch(
+            "withdrawals",
+            {
+                "id":
+                    f"eq.{withdrawal_id}"
+            },
+            {
+                "status":
+                    "approved",
+
+                "reviewed_at":
+                    datetime.now().isoformat(),
+
+                "reviewed_by":
+                    ADMIN_ID,
+
+                "approved_at":
+                    datetime.now().isoformat(),
+            },
+        )
+
+        if not updated:
+
+            await query.message.reply_text(
+                "❌ Could not approve withdrawal."
+            )
+
+            return
+
+        await query.message.reply_text(
+            "✅ WITHDRAWAL APPROVED\n\n"
+            f"👤 User: {user_id}\n"
+            f"💰 Amount: {amount:.2f} BDT"
+        )
+
+        try:
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=(
+                    "✅ Withdrawal Approved!\n\n"
+                    f"💰 Amount: {amount:.2f} BDT\n"
+                    f"💳 Method: "
+                    f"{withdrawal.get('method', '')}\n"
+                    f"🏦 Account: "
+                    f"{withdrawal.get('account_number', '')}"
+                ),
+            )
+
+        except Exception:
+            logger.exception(
+                "Withdrawal approval notification error"
+            )
+
+    # REJECT
+    else:
+
+        updated = sb_patch(
+            "withdrawals",
+            {
+                "id":
+                    f"eq.{withdrawal_id}"
+            },
+            {
+                "status":
+                    "rejected",
+
+                "reviewed_at":
+                    datetime.now().isoformat(),
+
+                "reviewed_by":
+                    ADMIN_ID,
+            },
+        )
+
+        if not updated:
+
+            await query.message.reply_text(
+                "❌ Could not reject withdrawal."
+            )
+
+            return
+
+        # Return money to user
+        user = get_user_by_id(
+            user_id
+        )
+
+        if user:
+
+            old_balance = float(
+                user.get("balance", 0)
+            )
+
+            update_user(
+                user_id,
+                {
+                    "balance":
+                        old_balance + amount
+                },
+            )
+
+        await query.message.reply_text(
+            "❌ WITHDRAWAL REJECTED\n\n"
+            f"👤 User: {user_id}\n"
+            f"💰 Returned: {amount:.2f} BDT"
+        )
+
+        try:
+
+            await context.bot.send_message(
+                chat_id=user_id,
+                text=(
+                    "❌ Withdrawal Rejected\n\n"
+                    f"💰 {amount:.2f} BDT "
+                    "has been returned to your balance."
+                ),
+            )
+
+        except Exception:
+            logger.exception(
+                "Withdrawal rejection notification error"
+            )
 
 
 # =========================================================
@@ -2153,9 +2560,58 @@ async def language(update, context):
 
     await update.message.reply_text(
         "🌏 LANGUAGE\n\n"
-        "🇧🇩 বাংলা\n"
-        "🇬🇧 English"
+        "Select language:",
+        reply_markup=
+        InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton(
+                    "🇧🇩 বাংলা",
+                    callback_data="lang_bn",
+                ),
+                InlineKeyboardButton(
+                    "🇬🇧 English",
+                    callback_data="lang_en",
+                ),
+            ]
+        ]),
     )
+
+
+async def language_callback(update, context):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    if query.data == "lang_bn":
+
+        update_user(
+            query.from_user.id,
+            {
+                "language":
+                    "bn"
+            },
+        )
+
+        await query.message.reply_text(
+            "🇧🇩 বাংলা ভাষা নির্বাচন করা হয়েছে।",
+            reply_markup=main_keyboard(),
+        )
+
+    elif query.data == "lang_en":
+
+        update_user(
+            query.from_user.id,
+            {
+                "language":
+                    "en"
+            },
+        )
+
+        await query.message.reply_text(
+            "🇬🇧 English language selected.",
+            reply_markup=main_keyboard(),
+        )
 
 
 # =========================================================
@@ -2167,7 +2623,7 @@ async def text_handler(update, context):
     if not update.effective_user:
         return
 
-    # Admin processing
+    # Admin first
     if update.effective_user.id == ADMIN_ID:
 
         if await process_admin_text(
@@ -2177,7 +2633,7 @@ async def text_handler(update, context):
 
             return
 
-    # Task processing
+    # Task flow
     if await process_task_text(
         update,
         context,
@@ -2185,7 +2641,7 @@ async def text_handler(update, context):
 
         return
 
-    # Withdraw processing
+    # Withdrawal flow
     if await process_withdraw(
         update,
         context,
@@ -2193,7 +2649,7 @@ async def text_handler(update, context):
 
         return
 
-    if not update.message or not update.message.text:
+    if not update.message:
         return
 
     text = update.message.text
@@ -2240,16 +2696,10 @@ async def text_handler(update, context):
 
 async def error_handler(update, context):
 
-    error = context.error
-
     logger.error(
-        "Telegram handler error: %r",
-        error,
-        exc_info=(
-            type(error),
-            error,
-            error.__traceback__,
-        ) if error else None,
+        "Telegram error: %r",
+        context.error,
+        exc_info=True,
     )
 
 
@@ -2263,7 +2713,6 @@ def main():
     logger.info("Starting Success Income Zone Bot")
     logger.info("=" * 60)
 
-    # Environment check
     if not BOT_TOKEN:
 
         logger.error(
@@ -2297,41 +2746,22 @@ def main():
         ADMIN_ID,
     )
 
-    logger.info(
-        "Port: %s",
-        PORT,
-    )
-
-    # -----------------------------------------------------
-    # Render health server
-    # -----------------------------------------------------
-
+    # Health server
     health_thread = threading.Thread(
         target=run_health_server,
-        name="health-server",
         daemon=True,
     )
 
     health_thread.start()
 
-    logger.info(
-        "Health server thread started"
-    )
-
-    # -----------------------------------------------------
-    # Telegram Application
-    # -----------------------------------------------------
-
+    # Telegram
     application = (
         Application.builder()
         .token(BOT_TOKEN)
         .build()
     )
 
-    # -----------------------------------------------------
     # Commands
-    # -----------------------------------------------------
-
     application.add_handler(
         CommandHandler(
             "start",
@@ -2346,10 +2776,7 @@ def main():
         )
     )
 
-    # -----------------------------------------------------
     # Task callbacks
-    # -----------------------------------------------------
-
     application.add_handler(
         CallbackQueryHandler(
             select_task,
@@ -2371,10 +2798,14 @@ def main():
         )
     )
 
-    # -----------------------------------------------------
-    # Admin callbacks
-    # -----------------------------------------------------
+    application.add_handler(
+        CallbackQueryHandler(
+            cancel_submission,
+            pattern=r"^cancel_submission$",
+        )
+    )
 
+    # Admin
     application.add_handler(
         CallbackQueryHandler(
             admin_callback,
@@ -2382,10 +2813,7 @@ def main():
         )
     )
 
-    # -----------------------------------------------------
-    # Approve / Reject
-    # -----------------------------------------------------
-
+    # Approve / reject task
     application.add_handler(
         CallbackQueryHandler(
             review_submission,
@@ -2393,10 +2821,23 @@ def main():
         )
     )
 
-    # -----------------------------------------------------
-    # Text
-    # -----------------------------------------------------
+    # Withdrawal
+    application.add_handler(
+        CallbackQueryHandler(
+            review_withdrawal,
+            pattern=r"^(approve_withdraw_|reject_withdraw_)",
+        )
+    )
 
+    # Language
+    application.add_handler(
+        CallbackQueryHandler(
+            language_callback,
+            pattern=r"^lang_",
+        )
+    )
+
+    # Text
     application.add_handler(
         MessageHandler(
             filters.TEXT & ~filters.COMMAND,
@@ -2404,77 +2845,28 @@ def main():
         )
     )
 
-    # -----------------------------------------------------
-    # Error handler
-    # -----------------------------------------------------
-
     application.add_error_handler(
         error_handler
     )
 
     logger.info(
-        "All Telegram handlers registered"
+        "All handlers registered."
     )
 
     logger.info(
         "Starting Telegram polling..."
     )
 
-    # -----------------------------------------------------
-    # POLLING
-    # -----------------------------------------------------
-
-    try:
-
-        application.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True,
-            close_loop=False,
-        )
-
-        logger.warning(
-            "⚠️ application.run_polling() returned normally."
-        )
-
-    except KeyboardInterrupt:
-
-        logger.info(
-            "KeyboardInterrupt received."
-        )
-
-    except Exception:
-
-        logger.exception(
-            "❌ Bot crashed with exception."
-        )
-
-    finally:
-
-        logger.info(
-            "=" * 60
-        )
-
-        logger.info(
-            "Bot process is shutting down."
-        )
-
-        logger.info(
-            "=" * 60
-        )
+    application.run_polling(
+        allowed_updates=Update.ALL_TYPES,
+        drop_pending_updates=True,
+        close_loop=False,
+    )
 
 
 # =========================================================
-# ENTRY POINT
+# ENTRY
 # =========================================================
 
 if __name__ == "__main__":
-
-    try:
-
-        main()
-
-    except Exception:
-
-        logger.exception(
-            "❌ Fatal error in main process."
-        )
+    main()
