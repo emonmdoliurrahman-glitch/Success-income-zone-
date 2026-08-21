@@ -57,14 +57,12 @@ logger = logging.getLogger(__name__)
 
 
 # =========================================================
-# LANGUAGE / TRANSLATION
+# LANGUAGE
 # =========================================================
 
 TEXTS = {
-
     "bn": {
-
-        # Main menu
+        # Main
         "balance": "💸 ব্যালেন্স",
         "tasks": "💰 কাজ",
         "withdraw": "📤 টাকা উত্তোলন",
@@ -74,7 +72,6 @@ TEXTS = {
         "language": "🌏 ভাষা",
         "admin_panel": "👨‍💻 অ্যাডমিন প্যানেল",
 
-        # General
         "welcome": (
             "👋 Success Income Zone-এ স্বাগতম!\n\n"
             "💰 কাজ সম্পন্ন করে BDT আয় করুন।\n"
@@ -83,7 +80,6 @@ TEXTS = {
         ),
 
         "select_option": "👇 একটি অপশন নির্বাচন করুন:",
-        "main_menu": "🏠 প্রধান মেনু",
         "cancel": "❌ বাতিল",
         "back": "🔙 ফিরে যান",
 
@@ -95,7 +91,7 @@ TEXTS = {
         # Profile
         "profile_title": "👤 প্রোফাইল",
         "no_username": "কোনো ইউজারনেম নেই",
-        "user_id": "🆔 আইডি",
+        "user_id": "🆔 ইউজার আইডি",
         "username": "👤 ইউজারনেম",
         "referrals_count": "👥 রেফারেল",
         "joined": "📅 যোগদানের সময়",
@@ -103,7 +99,7 @@ TEXTS = {
         # Referral
         "referral_title": "🫂 আমার রেফারেল",
         "referral_link": "🔗 আপনার রেফারেল লিংক",
-        "referral_commission": "🎁 কমিশন",
+        "referral_commission": "🎁 রেফারেল আয়",
 
         # Tasks
         "tasks_title": "📋 কাজসমূহ",
@@ -112,24 +108,15 @@ TEXTS = {
         "task": "📋 কাজ",
         "reward": "💰 পুরস্কার",
         "review_time": "⏳ রিভিউ সময়",
-        "description": "📄 বিবরণ",
-        "uid": "🆔 UID",
-        "report_instruction": "✍️ রিপোর্টের নির্দেশনা",
-        "required": "প্রয়োজন",
-        "not_required": "প্রয়োজন নেই",
         "start": "🚀 শুরু করুন",
         "task_started": "🚀 কাজ শুরু হয়েছে!",
-        "send_uid": "🆔 আপনার প্রয়োজনীয় UID পাঠান:",
-        "uid_received": "🆔 UID গ্রহণ করা হয়েছে।",
-        "send_report": "📋 প্রয়োজনীয় রিপোর্ট পাঠান:",
-        "valid_uid": "❌ একটি সঠিক UID পাঠান।",
+        "send_report": "✍️ কাজের রিপোর্ট পাঠান:",
         "report_empty": "❌ রিপোর্ট খালি রাখা যাবে না।",
         "report_received": "📋 রিপোর্ট গ্রহণ করা হয়েছে।",
         "confirm_submission": "আপনার সাবমিশন নিশ্চিত করুন:",
         "submit": "✅ জমা দিন",
         "submission_incomplete": "❌ সাবমিশন অসম্পূর্ণ।",
         "task_not_found": "❌ কাজটি পাওয়া যায়নি।",
-        "uid_required": "❌ UID প্রয়োজন।",
         "submit_failed": (
             "❌ কাজ জমা দেওয়া যায়নি।\n\n"
             "অনুগ্রহ করে পরে আবার চেষ্টা করুন।"
@@ -138,37 +125,29 @@ TEXTS = {
             "✅ আপনার রিপোর্ট গ্রহণ করা হয়েছে!\n\n"
             "⏳ কাজটি অ্যাডমিন রিভিউয়ের অপেক্ষায় আছে।"
         ),
-        "submission_cancelled": (
-            "❌ সাবমিশন বাতিল করা হয়েছে।"
-        ),
+        "submission_cancelled": "❌ কাজ বাতিল করা হয়েছে।",
 
         # Withdraw
         "withdraw_title": "📤 টাকা উত্তোলন",
-        "zero_balance": (
-            "❌ আপনার ব্যালেন্স ০.০০ BDT।"
-        ),
+        "zero_balance": "❌ আপনার ব্যালেন্স ০.০০ BDT।",
         "available_balance": "💰 বর্তমান ব্যালেন্স",
-        "send_amount": "টাকা উত্তোলনের পরিমাণ পাঠান:",
+        "send_amount": "💵 টাকা উত্তোলনের পরিমাণ পাঠান:",
         "invalid_amount": "❌ সঠিক পরিমাণ পাঠান।",
         "insufficient": "❌ পর্যাপ্ত ব্যালেন্স নেই।",
         "send_method": (
-            "💳 টাকা উত্তোলনের মাধ্যম পাঠান:\n\n"
+            "💳 টাকা উত্তোলনের মাধ্যম লিখুন:\n\n"
             "উদাহরণ:\n"
             "bKash\n"
             "Nagad\n"
             "Rocket"
         ),
         "send_account": "🏦 আপনার অ্যাকাউন্ট নম্বর পাঠান:",
-        "withdraw_created": (
-            "❌ টাকা উত্তোলনের অনুরোধ তৈরি করা যায়নি।"
-        ),
+        "withdraw_created": "❌ টাকা উত্তোলনের অনুরোধ তৈরি করা যায়নি।",
         "withdraw_success": (
             "✅ টাকা উত্তোলনের অনুরোধ জমা হয়েছে!\n\n"
             "⏳ অ্যাডমিন রিভিউয়ের জন্য অপেক্ষা করুন।"
         ),
-        "balance_update_failed": (
-            "❌ ব্যালেন্স আপডেট করা যায়নি।"
-        ),
+        "balance_update_failed": "❌ ব্যালেন্স আপডেট করা যায়নি।",
 
         # Language
         "language_title": "🌏 ভাষা",
@@ -182,9 +161,10 @@ TEXTS = {
 
         # Admin
         "admin_not_allowed": "❌ আপনি অ্যাডমিন নন।",
-        "access_denied": "❌ Access denied.",
+        "access_denied": "❌ অনুমতি নেই।",
         "admin_title": "👨‍💻 অ্যাডমিন প্যানেল",
         "admin_select": "👇 একটি অপশন নির্বাচন করুন:",
+
         "add_task": "➕ কাজ যোগ করুন",
         "all_tasks": "📋 সব কাজ",
         "delete_task": "🗑 কাজ মুছুন",
@@ -215,21 +195,13 @@ TEXTS = {
             "শুধু পূর্ণ সংখ্যা দিন।\n\n"
             "উদাহরণ: 12"
         ),
-        "send_description": "📄 কাজের Description পাঠান:",
-        "uid_requirement": (
-            "🆔 UID Requirement:\n\n"
-            "UID প্রয়োজন হলে YES পাঠান।\n"
-            "UID প্রয়োজন না হলে NO পাঠান।"
-        ),
-        "yes_no": "❌ শুধু YES অথবা NO পাঠান।",
-        "send_report_instruction": (
-            "✍️ Report Instruction পাঠান:"
-        ),
+
         "task_save_failed": (
             "❌ কাজ Save হয়নি।\n\n"
             "Supabase database error হয়েছে।\n"
             "Render Logs দেখুন।"
         ),
+
         "task_added": "✅ কাজ সফলভাবে যোগ হয়েছে!",
         "invalid_task_id": "❌ Task ID সঠিক নয়।",
         "task_deleted": "✅ কাজ মুছে ফেলা হয়েছে।",
@@ -239,60 +211,52 @@ TEXTS = {
         "no_pending": "📥 কোনো Pending submission নেই।",
         "no_withdrawals": "📤 কোনো Pending withdrawal নেই।",
 
-        # Admin balance
         "add_balance_format": (
             "💰 ব্যালেন্স যোগ\n\n"
-            "Format:\n"
+            "ফরম্যাট:\n"
             "USER_ID | AMOUNT\n\n"
             "উদাহরণ:\n"
             "7764329763 | 100"
         ),
+
         "remove_balance_format": (
             "➖ ব্যালেন্স কমান\n\n"
-            "Format:\n"
+            "ফরম্যাট:\n"
             "USER_ID | AMOUNT"
         ),
+
         "wrong_format": (
-            "❌ Format সঠিক নয়।\n\n"
+            "❌ ফরম্যাট সঠিক নয়।\n\n"
             "USER_ID | AMOUNT"
         ),
+
         "balance_added": "✅ ব্যালেন্স যোগ করা হয়েছে।",
         "balance_removed": "✅ ব্যালেন্স কমানো হয়েছে।",
 
         # Review
-        "task_approved": (
-            "🎉 কাজ Approved!\n\n"
-            "💰 Reward"
-        ),
-        "task_rejected": (
-            "❌ কাজ Rejected হয়েছে।\n\n"
-            "💰 কোনো Reward যোগ করা হয়নি।"
-        ),
+        "task_approved": "🎉 কাজ Approved হয়েছে!",
+        "task_rejected": "❌ কাজ Rejected হয়েছে।",
         "already_reviewed": "⚠️ এই submission ইতিমধ্যে review করা হয়েছে।",
         "submission_not_found": "❌ Submission পাওয়া যায়নি।",
+
         "withdraw_approved": "✅ টাকা উত্তোলন Approved হয়েছে!",
         "withdraw_rejected": "❌ টাকা উত্তোলন Rejected হয়েছে।",
         "money_returned": "আপনার ব্যালেন্সে টাকা ফেরত দেওয়া হয়েছে।",
 
-        # Unknown
-        "unknown": (
-            "❓ অনুগ্রহ করে একটি অপশন নির্বাচন করুন।"
-        ),
+        "unknown": "❓ অনুগ্রহ করে একটি অপশন নির্বাচন করুন।",
     },
 
     "en": {
-
-        # Main menu
+        # Main
         "balance": "💸 Balance",
         "tasks": "💰 Tasks",
         "withdraw": "📤 Withdraw",
         "profile": "👤 Profile",
-        "top": "🏆 Top",
+        "top": "🏆 Top Users",
         "referrals": "🫂 My Referrals",
         "language": "🌏 Language",
         "admin_panel": "👨‍💻 Admin Panel",
 
-        # General
         "welcome": (
             "👋 Welcome to Success Income Zone!\n\n"
             "💰 Complete tasks and earn BDT.\n"
@@ -301,27 +265,26 @@ TEXTS = {
         ),
 
         "select_option": "👇 Select an option:",
-        "main_menu": "🏠 Main Menu",
         "cancel": "❌ Cancel",
         "back": "🔙 Back",
 
         # Balance
-        "balance_title": "💸 BALANCE",
+        "balance_title": "💸 Balance",
         "balance_amount": "💰 Balance",
         "referral_earnings": "🎁 Referral Earnings",
 
         # Profile
-        "profile_title": "👤 PROFILE",
+        "profile_title": "👤 Profile",
         "no_username": "No username",
-        "user_id": "🆔 ID",
+        "user_id": "🆔 User ID",
         "username": "👤 Username",
         "referrals_count": "👥 Referrals",
         "joined": "📅 Joined",
 
         # Referral
-        "referral_title": "🫂 MY REFERRALS",
+        "referral_title": "🫂 My Referrals",
         "referral_link": "🔗 Your Referral Link",
-        "referral_commission": "🎁 Earnings",
+        "referral_commission": "🎁 Referral Earnings",
 
         # Tasks
         "tasks_title": "📋 Tasks",
@@ -329,44 +292,31 @@ TEXTS = {
         "select_task": "👇 Please select a task:",
         "task": "📋 Task",
         "reward": "💰 Reward",
-        "review_time": "⏳ Review time",
-        "description": "📄 Description",
-        "uid": "🆔 UID",
-        "report_instruction": "✍️ Report instruction",
-        "required": "Required",
-        "not_required": "Not Required",
+        "review_time": "⏳ Review Time",
         "start": "🚀 Start",
         "task_started": "🚀 Task Started!",
-        "send_uid": "🆔 Send your required UID:",
-        "uid_received": "🆔 UID received.",
-        "send_report": "📋 Please send the required report:",
-        "valid_uid": "❌ Please send a valid UID.",
+        "send_report": "✍️ Send your task report:",
         "report_empty": "❌ Report cannot be empty.",
         "report_received": "📋 Report received.",
         "confirm_submission": "Please confirm your submission:",
         "submit": "✅ Submit",
         "submission_incomplete": "❌ Submission incomplete.",
         "task_not_found": "❌ Task not found.",
-        "uid_required": "❌ UID is required.",
         "submit_failed": (
             "❌ Could not submit task.\n\n"
             "Please try again later."
         ),
         "report_received_success": (
             "✅ Your report has been received!\n\n"
-            "⏳ Task Pending Review"
+            "⏳ Task is waiting for Admin review."
         ),
-        "submission_cancelled": (
-            "❌ Submission cancelled."
-        ),
+        "submission_cancelled": "❌ Task cancelled.",
 
         # Withdraw
-        "withdraw_title": "📤 WITHDRAW",
-        "zero_balance": (
-            "❌ Your balance is 0.00 BDT."
-        ),
+        "withdraw_title": "📤 Withdraw",
+        "zero_balance": "❌ Your balance is 0.00 BDT.",
         "available_balance": "💰 Available Balance",
-        "send_amount": "Send withdrawal amount:",
+        "send_amount": "💵 Send withdrawal amount:",
         "invalid_amount": "❌ Invalid amount.",
         "insufficient": "❌ Insufficient balance.",
         "send_method": (
@@ -377,32 +327,29 @@ TEXTS = {
             "Rocket"
         ),
         "send_account": "🏦 Send your account number:",
-        "withdraw_created": (
-            "❌ Withdrawal request could not be created."
-        ),
+        "withdraw_created": "❌ Withdrawal request could not be created.",
         "withdraw_success": (
-            "✅ Withdrawal Request Submitted!\n\n"
+            "✅ Withdrawal request submitted!\n\n"
             "⏳ Please wait for Admin review."
         ),
-        "balance_update_failed": (
-            "❌ Balance update failed."
-        ),
+        "balance_update_failed": "❌ Balance update failed.",
 
         # Language
-        "language_title": "🌏 LANGUAGE",
+        "language_title": "🌏 Language",
         "select_language": "Select language:",
         "bangla_selected": "🇧🇩 বাংলা ভাষা নির্বাচন করা হয়েছে।",
         "english_selected": "🇬🇧 English language selected.",
 
         # Top
-        "top_title": "🏆 TOP USERS",
+        "top_title": "🏆 Top Users",
         "no_users": "❌ No users yet.",
 
         # Admin
         "admin_not_allowed": "❌ You are not an Admin.",
         "access_denied": "❌ Access denied.",
-        "admin_title": "👨‍💻 ADMIN PANEL",
+        "admin_title": "👨‍💻 Admin Panel",
         "admin_select": "👇 Select an option:",
+
         "add_task": "➕ Add Task",
         "all_tasks": "📋 All Tasks",
         "delete_task": "🗑 Delete Task",
@@ -433,79 +380,64 @@ TEXTS = {
             "Please send whole number.\n\n"
             "Example: 12"
         ),
-        "send_description": "📄 Send Task Description:",
-        "uid_requirement": (
-            "🆔 UID Requirement:\n\n"
-            "Send YES if UID is required.\n"
-            "Send NO if UID is not required."
-        ),
-        "yes_no": "❌ Please send YES or NO.",
-        "send_report_instruction": (
-            "✍️ Send Report Instruction:"
-        ),
+
         "task_save_failed": (
             "❌ Task save failed.\n\n"
             "Supabase database error occurred.\n"
             "Please check Render Logs."
         ),
-        "task_added": "✅ TASK ADDED SUCCESSFULLY!",
+
+        "task_added": "✅ Task added successfully!",
         "invalid_task_id": "❌ Invalid Task ID.",
-        "task_deleted": "✅ Task Deleted.",
+        "task_deleted": "✅ Task deleted.",
         "task_id_not_found": "❌ Task ID not found.",
         "no_tasks_admin": "❌ No tasks.",
         "no_users_admin": "❌ No users.",
         "no_pending": "📥 No pending submissions.",
         "no_withdrawals": "📤 No pending withdrawals.",
 
-        # Admin balance
         "add_balance_format": (
-            "💰 ADD BALANCE\n\n"
+            "💰 Add Balance\n\n"
             "Format:\n"
             "USER_ID | AMOUNT\n\n"
             "Example:\n"
             "7764329763 | 100"
         ),
+
         "remove_balance_format": (
-            "➖ REMOVE BALANCE\n\n"
+            "➖ Remove Balance\n\n"
             "Format:\n"
             "USER_ID | AMOUNT"
         ),
+
         "wrong_format": (
-            "❌ Wrong Format.\n\n"
+            "❌ Wrong format.\n\n"
             "USER_ID | AMOUNT"
         ),
-        "balance_added": "✅ Balance Added.",
-        "balance_removed": "✅ Balance Removed.",
+
+        "balance_added": "✅ Balance added.",
+        "balance_removed": "✅ Balance removed.",
 
         # Review
-        "task_approved": (
-            "🎉 Task Approved!\n\n"
-            "💰 Reward"
-        ),
-        "task_rejected": (
-            "❌ Task Rejected\n\n"
-            "💰 No reward was added."
-        ),
+        "task_approved": "🎉 Task Approved!",
+        "task_rejected": "❌ Task Rejected.",
         "already_reviewed": "⚠️ Already reviewed.",
         "submission_not_found": "❌ Submission not found.",
+
         "withdraw_approved": "✅ Withdrawal Approved!",
         "withdraw_rejected": "❌ Withdrawal Rejected.",
-        "money_returned": "has been returned to your balance.",
+        "money_returned": "The money has been returned to your balance.",
 
-        # Unknown
-        "unknown": (
-            "❓ Please select an option."
-        ),
+        "unknown": "❓ Please select an option.",
     },
 }
 
 
-def get_language(user_id):
-    """
-    User-এর database language বের করবে।
-    Default বাংলা।
-    """
+# =========================================================
+# TRANSLATION HELPERS
+# =========================================================
 
+def get_language(user_id):
     try:
         user = get_user_by_id(user_id)
 
@@ -522,23 +454,16 @@ def get_language(user_id):
 
 
 def t(user_id, key):
-    """
-    Translation helper.
-    """
-
     language = get_language(user_id)
 
     return TEXTS.get(
         language,
         TEXTS["bn"],
-    ).get(
-        key,
-        key,
-    )
+    ).get(key, key)
 
 
-def t_user(tg_user, key):
-    return t(tg_user.id, key)
+def t_user(user, key):
+    return t(user.id, key)
 
 
 # =========================================================
@@ -546,7 +471,6 @@ def t_user(tg_user, key):
 # =========================================================
 
 def supabase_headers():
-
     return {
         "apikey": SUPABASE_KEY,
         "Authorization": f"Bearer {SUPABASE_KEY}",
@@ -555,9 +479,7 @@ def supabase_headers():
 
 
 def sb_get(table, params=None):
-
     try:
-
         response = requests.get(
             f"{SUPABASE_URL}/rest/v1/{table}",
             headers=supabase_headers(),
@@ -566,35 +488,30 @@ def sb_get(table, params=None):
         )
 
         if not response.ok:
-
             logger.error(
                 "Supabase GET %s %s: %s",
                 table,
                 response.status_code,
                 response.text,
             )
-
             return []
 
         return response.json()
 
     except Exception:
-
-        logger.exception(
-            "Supabase GET exception"
-        )
-
+        logger.exception("Supabase GET exception")
         return []
 
 
 def sb_post(table, data):
-
     try:
-
         headers = supabase_headers()
+        headers["Prefer"] = "return=representation"
 
-        headers["Prefer"] = (
-            "return=representation"
+        logger.info(
+            "Supabase POST %s DATA=%s",
+            table,
+            data,
         )
 
         response = requests.post(
@@ -605,14 +522,12 @@ def sb_post(table, data):
         )
 
         if not response.ok:
-
             logger.error(
                 "Supabase POST %s %s: %s",
                 table,
                 response.status_code,
                 response.text,
             )
-
             return None
 
         if not response.text:
@@ -621,23 +536,14 @@ def sb_post(table, data):
         return response.json()
 
     except Exception:
-
-        logger.exception(
-            "Supabase POST exception"
-        )
-
+        logger.exception("Supabase POST exception")
         return None
 
 
 def sb_patch(table, params, data):
-
     try:
-
         headers = supabase_headers()
-
-        headers["Prefer"] = (
-            "return=representation"
-        )
+        headers["Prefer"] = "return=representation"
 
         response = requests.patch(
             f"{SUPABASE_URL}/rest/v1/{table}",
@@ -648,14 +554,12 @@ def sb_patch(table, params, data):
         )
 
         if not response.ok:
-
             logger.error(
                 "Supabase PATCH %s %s: %s",
                 table,
                 response.status_code,
                 response.text,
             )
-
             return None
 
         if not response.text:
@@ -664,18 +568,12 @@ def sb_patch(table, params, data):
         return response.json()
 
     except Exception:
-
-        logger.exception(
-            "Supabase PATCH exception"
-        )
-
+        logger.exception("Supabase PATCH exception")
         return None
 
 
 def sb_delete(table, params):
-
     try:
-
         response = requests.delete(
             f"{SUPABASE_URL}/rest/v1/{table}",
             headers=supabase_headers(),
@@ -684,24 +582,18 @@ def sb_delete(table, params):
         )
 
         if not response.ok:
-
             logger.error(
                 "Supabase DELETE %s %s: %s",
                 table,
                 response.status_code,
                 response.text,
             )
-
             return False
 
         return True
 
     except Exception:
-
-        logger.exception(
-            "Supabase DELETE exception"
-        )
-
+        logger.exception("Supabase DELETE exception")
         return False
 
 
@@ -712,7 +604,6 @@ def sb_delete(table, params):
 class HealthHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
-
         self.send_response(200)
 
         self.send_header(
@@ -727,7 +618,6 @@ class HealthHandler(BaseHTTPRequestHandler):
         )
 
     def do_HEAD(self):
-
         self.send_response(200)
 
         self.send_header(
@@ -742,9 +632,7 @@ class HealthHandler(BaseHTTPRequestHandler):
 
 
 def run_health_server():
-
     try:
-
         server = HTTPServer(
             ("0.0.0.0", PORT),
             HealthHandler,
@@ -758,10 +646,7 @@ def run_health_server():
         server.serve_forever()
 
     except Exception:
-
-        logger.exception(
-            "Health server crashed"
-        )
+        logger.exception("Health server crashed")
 
 
 # =========================================================
@@ -781,24 +666,19 @@ def get_user(tg_user):
     )
 
     if rows:
-
         user = rows[0]
+
+        # শুধুমাত্র নিশ্চিত user profile fields update
+        update_data = {
+            "first_name": tg_user.first_name or "",
+            "last_name": tg_user.last_name or "",
+            "username": tg_user.username or "",
+        }
 
         updated = sb_patch(
             "bot_users",
-            {
-                "id": f"eq.{user_id}",
-            },
-            {
-                "first_name":
-                    tg_user.first_name or "",
-
-                "last_name":
-                    tg_user.last_name or "",
-
-                "username":
-                    tg_user.username or "",
-            },
+            {"id": f"eq.{user_id}"},
+            update_data,
         )
 
         if updated:
@@ -806,20 +686,17 @@ def get_user(tg_user):
 
         return user
 
+    # নতুন user
     data = {
         "id": user_id,
-        "first_name":
-            tg_user.first_name or "",
-        "last_name":
-            tg_user.last_name or "",
-        "username":
-            tg_user.username or "",
+        "first_name": tg_user.first_name or "",
+        "last_name": tg_user.last_name or "",
+        "username": tg_user.username or "",
         "language": "bn",
         "balance": 0,
         "referral_earnings": 0,
         "referred_by": None,
-        "joined_at":
-            datetime.now().isoformat(),
+        "joined_at": datetime.now().isoformat(),
     }
 
     result = sb_post(
@@ -847,7 +724,6 @@ def get_user_by_id(user_id):
 
 
 def update_user(user_id, data):
-
     return sb_patch(
         "bot_users",
         {
@@ -862,18 +738,20 @@ def update_user(user_id, data):
 # =========================================================
 
 def get_tasks():
+    """
+    আপনার বর্তমান tasks table অনুযায়ী
+    শুধুমাত্র নিশ্চিত column ব্যবহার করা হচ্ছে।
+    """
 
     return sb_get(
         "tasks",
         {
-            "is_active": "eq.true",
             "order": "id.asc",
         },
     )
 
 
 def get_all_tasks():
-
     return sb_get(
         "tasks",
         {
@@ -914,12 +792,13 @@ def get_submission(submission_id):
 
 def main_keyboard(user_id=None):
 
-    language = get_language(
-        user_id
-    ) if user_id else "bn"
+    language = (
+        get_language(user_id)
+        if user_id
+        else "bn"
+    )
 
     if language == "bn":
-
         keyboard = [
             [
                 "💸 ব্যালেন্স",
@@ -938,8 +817,12 @@ def main_keyboard(user_id=None):
             ],
         ]
 
-    else:
+        if user_id == ADMIN_ID:
+            keyboard.append(
+                ["👨‍💻 অ্যাডমিন প্যানেল"]
+            )
 
+    else:
         keyboard = [
             [
                 "💸 Balance",
@@ -950,7 +833,7 @@ def main_keyboard(user_id=None):
                 "👤 Profile",
             ],
             [
-                "🏆 Top",
+                "🏆 Top Users",
                 "🫂 My Referrals",
             ],
             [
@@ -958,17 +841,10 @@ def main_keyboard(user_id=None):
             ],
         ]
 
-    if user_id == ADMIN_ID:
-
-        keyboard.append(
-            [
-                (
-                    "👨‍💻 অ্যাডমিন প্যানেল"
-                    if language == "bn"
-                    else "👨‍💻 Admin Panel"
-                )
-            ]
-        )
+        if user_id == ADMIN_ID:
+            keyboard.append(
+                ["👨‍💻 Admin Panel"]
+            )
 
     return ReplyKeyboardMarkup(
         keyboard,
@@ -978,82 +854,146 @@ def main_keyboard(user_id=None):
 
 def cancel_keyboard(user_id):
 
-    return InlineKeyboardMarkup([
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton(
-                t(user_id, "cancel"),
-                callback_data="global_cancel",
-            )
+            [
+                InlineKeyboardButton(
+                    t(user_id, "cancel"),
+                    callback_data="global_cancel",
+                )
+            ]
         ]
-    ])
+    )
 
 
-def admin_keyboard():
+def admin_keyboard(user_id=ADMIN_ID):
 
-    return InlineKeyboardMarkup([
+    language = get_language(user_id)
 
+    if language == "bn":
+        return InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "➕ কাজ যোগ করুন",
+                        callback_data="admin_add_task",
+                    ),
+                    InlineKeyboardButton(
+                        "📋 সব কাজ",
+                        callback_data="admin_all_tasks",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "🗑 কাজ মুছুন",
+                        callback_data="admin_delete_task",
+                    ),
+                    InlineKeyboardButton(
+                        "👥 ব্যবহারকারী",
+                        callback_data="admin_users",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "📥 Pending কাজ",
+                        callback_data="admin_pending",
+                    ),
+                    InlineKeyboardButton(
+                        "💰 ব্যালেন্স যোগ",
+                        callback_data="admin_add_balance",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "➖ ব্যালেন্স কমান",
+                        callback_data="admin_remove_balance",
+                    ),
+                    InlineKeyboardButton(
+                        "📤 উত্তোলন",
+                        callback_data="admin_withdrawals",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        "🔙 মূল মেনু",
+                        callback_data="admin_main_menu",
+                    ),
+                ],
+            ]
+        )
+
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton(
-                "➕ Add Task",
-                callback_data="admin_add_task",
-            ),
-            InlineKeyboardButton(
-                "📋 All Tasks",
-                callback_data="admin_all_tasks",
-            ),
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🗑 Delete Task",
-                callback_data="admin_delete_task",
-            ),
-            InlineKeyboardButton(
-                "👥 Users",
-                callback_data="admin_users",
-            ),
-        ],
-
-        [
-            InlineKeyboardButton(
-                "📥 Pending Tasks",
-                callback_data="admin_pending",
-            ),
-            InlineKeyboardButton(
-                "💰 Add Balance",
-                callback_data="admin_add_balance",
-            ),
-        ],
-
-        [
-            InlineKeyboardButton(
-                "➖ Remove Balance",
-                callback_data="admin_remove_balance",
-            ),
-            InlineKeyboardButton(
-                "📤 Withdrawals",
-                callback_data="admin_withdrawals",
-            ),
-        ],
-
-        [
-            InlineKeyboardButton(
-                "🔙 Main Menu",
-                callback_data="admin_main_menu",
-            ),
-    ])
-
-
-def admin_cancel_keyboard():
-
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton(
-                "❌ Cancel",
-                callback_data="admin_cancel",
-            )
+            [
+                InlineKeyboardButton(
+                    "➕ Add Task",
+                    callback_data="admin_add_task",
+                ),
+                InlineKeyboardButton(
+                    "📋 All Tasks",
+                    callback_data="admin_all_tasks",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "🗑 Delete Task",
+                    callback_data="admin_delete_task",
+                ),
+                InlineKeyboardButton(
+                    "👥 Users",
+                    callback_data="admin_users",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "📥 Pending Tasks",
+                    callback_data="admin_pending",
+                ),
+                InlineKeyboardButton(
+                    "💰 Add Balance",
+                    callback_data="admin_add_balance",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "➖ Remove Balance",
+                    callback_data="admin_remove_balance",
+                ),
+                InlineKeyboardButton(
+                    "📤 Withdrawals",
+                    callback_data="admin_withdrawals",
+                ),
+            ],
+            [
+                InlineKeyboardButton(
+                    "🔙 Main Menu",
+                    callback_data="admin_main_menu",
+                ),
+            ],
         ]
-    ])
+    )
+
+
+def admin_cancel_keyboard(user_id=ADMIN_ID):
+
+    language = get_language(user_id)
+
+    text = (
+        "❌ বাতিল"
+        if language == "bn"
+        else "❌ Cancel"
+    )
+
+    return InlineKeyboardMarkup(
+        [
+            [
+                InlineKeyboardButton(
+                    text,
+                    callback_data="admin_cancel",
+                )
+            ]
+        ]
+    )
 
 
 # =========================================================
@@ -1076,29 +1016,21 @@ async def start(update, context):
 
         if referral_id.isdigit():
 
-            referral_id = int(
-                referral_id
-            )
+            referral_id = int(referral_id)
 
             if referral_id != tg_user.id:
 
-                if user.get(
-                    "referred_by"
-                ) is None:
+                if user.get("referred_by") is None:
 
-                    referrer = (
-                        get_user_by_id(
-                            referral_id
-                        )
+                    referrer = get_user_by_id(
+                        referral_id
                     )
 
                     if referrer:
-
                         update_user(
                             tg_user.id,
                             {
-                                "referred_by":
-                                    referral_id
+                                "referred_by": referral_id
                             },
                         )
 
@@ -1126,10 +1058,6 @@ async def balance(update, context):
     )
 
     user_id = update.effective_user.id
-
-    language = get_language(
-        user_id
-    )
 
     await update.message.reply_text(
 
@@ -1162,17 +1090,14 @@ async def profile(update, context):
     username = (
         "@" + user.get("username", "")
         if user.get("username")
-        else t(
-            user_id,
-            "no_username",
-        )
+        else t(user_id, "no_username")
     )
 
+    # FIXED SYNTAX
     referrals = sb_get(
         "bot_users",
         {
-            "referred_by":
-                f"eq.{user['id']",
+            "referred_by": f"eq.{user['id']",
             "select": "id",
         },
     )
@@ -1222,8 +1147,7 @@ async def referrals(update, context):
     rows = sb_get(
         "bot_users",
         {
-            "referred_by":
-                f"eq.{user['id']}",
+            "referred_by": f"eq.{user['id']}",
             "select": "id",
         },
     )
@@ -1281,23 +1205,32 @@ async def show_tasks(update, context):
             task.get("reward", 0)
         )
 
-        keyboard.append([
-            InlineKeyboardButton(
-                f"{task.get('title', 'Task')} "
-                f"({reward:.2f} BDT)",
+        keyboard.append(
+            [
+                InlineKeyboardButton(
+                    f"{task.get('title', 'Task')} "
+                    f"({reward:.2f} BDT)",
+                    callback_data=
+                    f"select_task_{task['id']}",
+                )
+            ]
+        )
 
-                callback_data=
-                f"select_task_{task['id']}",
+    keyboard.append(
+        [
+            InlineKeyboardButton(
+                t(user_id, "cancel"),
+                callback_data="global_cancel",
             )
-        ])
+        ]
+    )
 
     await update.message.reply_text(
 
         f"{t(user_id, 'tasks_title')}\n\n"
         f"{t(user_id, 'select_task')}",
 
-        reply_markup=
-        InlineKeyboardMarkup(
+        reply_markup=InlineKeyboardMarkup(
             keyboard
         ),
     )
@@ -1338,32 +1271,6 @@ async def select_task(update, context):
         task.get("review_hours", 0)
     )
 
-    description = task.get(
-        "description",
-        "",
-    )
-
-    uid_required = str(
-        task.get("uid", "")
-    ).lower()
-
-    report_instruction = task.get(
-        "report_instruction",
-        "",
-    )
-
-    uid_text = (
-        t(user_id, "required")
-        if uid_required in (
-            "yes",
-            "true",
-            "required",
-            "হ্যাঁ",
-        )
-        else
-        t(user_id, "not_required")
-    )
-
     text = (
 
         f"{t(user_id, 'task')}: "
@@ -1373,35 +1280,36 @@ async def select_task(update, context):
         f"{reward:.2f} BDT\n\n"
 
         f"{t(user_id, 'review_time')}: "
-        f"{review_hours} hours\n\n"
-
-        f"{t(user_id, 'description')}:\n"
-        f"{description}\n\n"
-
-        f"{t(user_id, 'uid')}: "
-        f"{uid_text}\n\n"
-
-        f"{t(user_id, 'report_instruction')}:\n"
-        f"{report_instruction}"
+        f"{review_hours} ঘণ্টা"
+        if get_language(user_id) == "bn"
+        else
+        f"{t(user_id, 'task')}: "
+        f"{task.get('title', '')}\n\n"
+        f"{t(user_id, 'reward')}: "
+        f"{reward:.2f} BDT\n\n"
+        f"{t(user_id, 'review_time')}: "
+        f"{review_hours} hours"
     )
 
-    keyboard = [[
-        InlineKeyboardButton(
-            t(user_id, "start"),
-            callback_data=
-            f"start_task_{task['id']}",
-        )
-    ], [
-        InlineKeyboardButton(
-            t(user_id, "cancel"),
-            callback_data="global_cancel",
-        )
-    ]]
+    keyboard = [
+        [
+            InlineKeyboardButton(
+                t(user_id, "start"),
+                callback_data=
+                f"start_task_{task['id']}",
+            )
+        ],
+        [
+            InlineKeyboardButton(
+                t(user_id, "cancel"),
+                callback_data="global_cancel",
+            )
+        ],
+    ]
 
     await query.message.reply_text(
         text,
-        reply_markup=
-        InlineKeyboardMarkup(
+        reply_markup=InlineKeyboardMarkup(
             keyboard
         ),
     )
@@ -1436,46 +1344,16 @@ async def start_task(update, context):
 
     context.user_data.clear()
 
-    context.user_data[
-        "task_id"
-    ] = int(task_id)
+    context.user_data["task_id"] = int(task_id)
+    context.user_data["task_step"] = "report"
 
-    uid_required = str(
-        task.get("uid", "")
-    ).lower()
-
-    if uid_required in (
-        "yes",
-        "true",
-        "required",
-        "হ্যাঁ",
-    ):
-
-        context.user_data[
-            "task_step"
-        ] = "uid"
-
-        await query.message.reply_text(
-            f"{t(user_id, 'task_started')}\n\n"
-            f"{t(user_id, 'send_uid')}",
-            reply_markup=cancel_keyboard(
-                user_id
-            ),
-        )
-
-    else:
-
-        context.user_data[
-            "task_step"
-        ] = "report"
-
-        await query.message.reply_text(
-            f"{t(user_id, 'task_started')}\n\n"
-            f"{t(user_id, 'send_report')}",
-            reply_markup=cancel_keyboard(
-                user_id
-            ),
-        )
+    await query.message.reply_text(
+        f"{t(user_id, 'task_started')}\n\n"
+        f"{t(user_id, 'send_report')}",
+        reply_markup=cancel_keyboard(
+            user_id
+        ),
+    )
 
 
 # =========================================================
@@ -1498,67 +1376,9 @@ async def process_task_text(update, context):
 
     text = update.message.text.strip()
 
-    if step == "uid":
-
-        if len(text) < 3:
-
-            await update.message.reply_text(
-                t(user_id, "valid_uid"),
-                reply_markup=cancel_keyboard(
-                    user_id
-                ),
-            )
-
-            return True
-
-        context.user_data[
-            "task_uid"
-        ] = text
-
-        context.user_data[
-            "task_step"
-        ] = "report"
-
-        task_id = context.user_data.get(
-            "task_id"
-        )
-
-        task = get_task(task_id)
-
-        report_instruction = ""
-
-        if task:
-
-            report_instruction = task.get(
-                "report_instruction",
-                "",
-            )
-
-        message = (
-            f"{t(user_id, 'uid_received')}\n\n"
-            f"{t(user_id, 'send_report')}"
-        )
-
-        if report_instruction:
-
-            message += (
-                "\n\n"
-                f"{t(user_id, 'report_instruction')}:\n"
-                f"{report_instruction}"
-            )
-
-        await update.message.reply_text(
-            message,
-            reply_markup=cancel_keyboard(
-                user_id
-            ),
-        )
-
-        return True
-
     if step == "report":
 
-        if len(text) < 1:
+        if not text:
 
             await update.message.reply_text(
                 t(user_id, "report_empty"),
@@ -1582,26 +1402,24 @@ async def process_task_text(update, context):
             f"{t(user_id, 'report_received')}\n\n"
             f"{t(user_id, 'confirm_submission')}",
 
-            reply_markup=
-            InlineKeyboardMarkup([
-
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton(
-                        t(user_id, "submit"),
-                        callback_data=
-                        "confirm_submission",
-                    )
-                ],
-
-                [
-                    InlineKeyboardButton(
-                        t(user_id, "cancel"),
-                        callback_data=
-                        "global_cancel",
-                    )
-                ],
-
-            ]),
+                    [
+                        InlineKeyboardButton(
+                            t(user_id, "submit"),
+                            callback_data=
+                            "confirm_submission",
+                        )
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            t(user_id, "cancel"),
+                            callback_data=
+                            "global_cancel",
+                        )
+                    ],
+                ]
+            ),
         )
 
         return True
@@ -1647,10 +1465,6 @@ async def confirm_submission(update, context):
         "task_id"
     )
 
-    uid_value = context.user_data.get(
-        "task_uid"
-    )
-
     report = context.user_data.get(
         "task_report"
     )
@@ -1661,7 +1475,10 @@ async def confirm_submission(update, context):
             t(
                 user_id,
                 "submission_incomplete",
-            )
+            ),
+            reply_markup=main_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -1674,29 +1491,10 @@ async def confirm_submission(update, context):
             t(
                 user_id,
                 "task_not_found",
-            )
-        )
-
-        return
-
-    uid_required = str(
-        task.get("uid", "")
-    ).lower()
-
-    uid_is_required = uid_required in (
-        "yes",
-        "true",
-        "required",
-        "হ্যাঁ",
-    )
-
-    if uid_is_required and not uid_value:
-
-        await query.message.reply_text(
-            t(
-                user_id,
-                "uid_required",
-            )
+            ),
+            reply_markup=main_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -1709,28 +1507,21 @@ async def confirm_submission(update, context):
         task.get("reward", 0)
     )
 
+    # submissions table অনুযায়ী
     data = {
-        "user_id":
-            user["id"],
-
-        "task_id":
-            int(task["id"]),
-
-        "facebook_uid":
-            uid_value or "",
-
-        "written_report":
-            report,
-
-        "reward":
-            reward,
-
-        "status":
-            "pending",
-
-        "created_at":
-            datetime.now().isoformat(),
+        "user_id": user["id"],
+        "task_id": int(task["id"]),
+        "facebook_uid": "",
+        "written_report": report,
+        "reward": reward,
+        "status": "pending",
+        "created_at": datetime.now().isoformat(),
     }
+
+    logger.info(
+        "Trying to save submission: %s",
+        data,
+    )
 
     result = sb_post(
         "submissions",
@@ -1768,12 +1559,6 @@ async def confirm_submission(update, context):
     # Admin notification
     try:
 
-        uid_display = (
-            uid_value
-            if uid_value
-            else "Not required"
-        )
-
         await context.bot.send_message(
 
             chat_id=ADMIN_ID,
@@ -1797,35 +1582,29 @@ async def confirm_submission(update, context):
                 f"💰 Reward: "
                 f"{reward:.2f} BDT\n\n"
 
-                f"🆔 UID: "
-                f"{uid_display}\n\n"
-
                 f"📄 Report:\n"
                 f"{report}"
             ),
 
-            reply_markup=
-            InlineKeyboardMarkup([
-
+            reply_markup=InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton(
-                        "✅ Approve",
-                        callback_data=
-                        f"approve_{submission['id']}",
-                    ),
-
-                    InlineKeyboardButton(
-                        "❌ Reject",
-                        callback_data=
-                        f"reject_{submission['id']}",
-                    ),
+                    [
+                        InlineKeyboardButton(
+                            "✅ Approve",
+                            callback_data=
+                            f"approve_{submission['id']}",
+                        ),
+                        InlineKeyboardButton(
+                            "❌ Reject",
+                            callback_data=
+                            f"reject_{submission['id']}",
+                        ),
+                    ]
                 ]
-
-            ]),
+            ),
         )
 
     except Exception:
-
         logger.exception(
             "Admin notification error"
         )
@@ -1893,32 +1672,7 @@ async def review_submission(update, context):
         submission.get("reward", 0)
     )
 
-    updated = sb_patch(
-        "submissions",
-        {
-            "id":
-                f"eq.{submission_id}"
-        },
-        {
-            "status":
-                action,
-
-            "reviewed_at":
-                datetime.now().isoformat(),
-
-            "reviewed_by":
-                ADMIN_ID,
-        },
-    )
-
-    if not updated:
-
-        await query.message.reply_text(
-            "❌ Could not update submission."
-        )
-
-        return
-
+    # APPROVE
     if action == "approved":
 
         user = get_user_by_id(
@@ -1944,8 +1698,7 @@ async def review_submission(update, context):
         updated_user = update_user(
             user_id,
             {
-                "balance":
-                    new_balance
+                "balance": new_balance
             },
         )
 
@@ -1957,7 +1710,39 @@ async def review_submission(update, context):
 
             return
 
-        # Referral
+        # Submission status update
+        updated_submission = sb_patch(
+            "submissions",
+            {
+                "id":
+                    f"eq.{submission_id}"
+            },
+            {
+                "status": "approved",
+                "reviewed_at":
+                    datetime.now().isoformat(),
+                "reviewed_by":
+                    ADMIN_ID,
+            },
+        )
+
+        if not updated_submission:
+
+            # Balance rollback চেষ্টা
+            update_user(
+                user_id,
+                {
+                    "balance": old_balance
+                },
+            )
+
+            await query.message.reply_text(
+                "❌ Submission update failed. Reward rollback করা হয়েছে."
+            )
+
+            return
+
+        # Referral commission
         referrer_id = user.get(
             "referred_by"
         )
@@ -2013,11 +1798,8 @@ async def review_submission(update, context):
             f"{reward:.2f} BDT"
         )
 
+        # User notification
         try:
-
-            final_user = get_user_by_id(
-                user_id
-            )
 
             language = get_language(
                 user_id
@@ -2030,7 +1812,7 @@ async def review_submission(update, context):
                     f"💰 Reward: "
                     f"{reward:.2f} BDT\n\n"
                     f"💵 আপনার ব্যালেন্স: "
-                    f"{float(final_user.get('balance', 0)):.2f} BDT"
+                    f"{new_balance:.2f} BDT"
                 )
 
             else:
@@ -2040,7 +1822,7 @@ async def review_submission(update, context):
                     f"💰 Reward: "
                     f"{reward:.2f} BDT\n\n"
                     f"💵 Your Balance: "
-                    f"{float(final_user.get('balance', 0)):.2f} BDT"
+                    f"{new_balance:.2f} BDT"
                 )
 
             await context.bot.send_message(
@@ -2049,12 +1831,38 @@ async def review_submission(update, context):
             )
 
         except Exception:
-
             logger.exception(
                 "Approval notification error"
             )
 
+    # REJECT
     else:
+
+        updated = sb_patch(
+            "submissions",
+            {
+                "id":
+                    f"eq.{submission_id}"
+            },
+            {
+                "status":
+                    "rejected",
+
+                "reviewed_at":
+                    datetime.now().isoformat(),
+
+                "reviewed_by":
+                    ADMIN_ID,
+            },
+        )
+
+        if not updated:
+
+            await query.message.reply_text(
+                "❌ Could not reject submission."
+            )
+
+            return
 
         await query.message.reply_text(
 
@@ -2094,14 +1902,13 @@ async def review_submission(update, context):
             )
 
         except Exception:
-
             logger.exception(
                 "Rejection notification error"
             )
 
 
 # =========================================================
-# ADMIN
+# ADMIN COMMAND
 # =========================================================
 
 async def admin_command(update, context):
@@ -2119,16 +1926,15 @@ async def admin_command(update, context):
 
     context.user_data.clear()
 
+    user_id = update.effective_user.id
+
     await update.message.reply_text(
-        t(
-            update.effective_user.id,
-            "admin_title",
-        ) + "\n\n" +
-        t(
-            update.effective_user.id,
-            "admin_select",
+        t(user_id, "admin_title")
+        + "\n\n"
+        + t(user_id, "admin_select"),
+        reply_markup=admin_keyboard(
+            user_id
         ),
-        reply_markup=admin_keyboard(),
     )
 
 
@@ -2152,27 +1958,31 @@ async def admin_callback(update, context):
 
     action = query.data
 
+    user_id = query.from_user.id
+
     # ADMIN CANCEL
     if action == "admin_cancel":
 
         context.user_data.clear()
 
         await query.message.reply_text(
-            "❌ Cancelled.",
-            reply_markup=admin_keyboard(),
+            "❌ বাতিল করা হয়েছে।",
+            reply_markup=admin_keyboard(
+                user_id
+            ),
         )
 
         return
 
-    # MAIN
+    # MAIN MENU
     if action == "admin_main_menu":
 
         context.user_data.clear()
 
         await query.message.reply_text(
-            "🏠 Main Menu",
+            "🏠 মূল মেনু",
             reply_markup=main_keyboard(
-                ADMIN_ID
+                user_id
             ),
         )
 
@@ -2188,9 +1998,11 @@ async def admin_callback(update, context):
         ] = "task_title"
 
         await query.message.reply_text(
-            "➕ ADD TASK\n\n"
-            "📌 Send Task Title:",
-            reply_markup=admin_cancel_keyboard(),
+            "➕ কাজ যোগ করুন\n\n"
+            "📌 কাজের Title পাঠান:",
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -2203,7 +2015,10 @@ async def admin_callback(update, context):
         if not tasks:
 
             await query.message.reply_text(
-                "📋 No tasks available."
+                t(
+                    user_id,
+                    "no_tasks_admin",
+                )
             )
 
             return
@@ -2212,7 +2027,7 @@ async def admin_callback(update, context):
 
             await query.message.reply_text(
 
-                "📋 TASK\n\n"
+                "📋 কাজ\n\n"
 
                 f"🆔 ID: "
                 f"{task.get('id')}\n"
@@ -2224,19 +2039,8 @@ async def admin_callback(update, context):
                 f"{float(task.get('reward', 0)):.2f} BDT\n"
 
                 f"⏳ Review: "
-                f"{int(task.get('review_hours', 0))} hours\n\n"
+                f"{int(task.get('review_hours', 0))} ঘণ্টা"
 
-                f"📝 Description:\n"
-                f"{task.get('description', '')}\n\n"
-
-                f"🆔 UID: "
-                f"{task.get('uid', '')}\n\n"
-
-                f"✍️ Report:\n"
-                f"{task.get('report_instruction', '')}\n\n"
-
-                f"🟢 Active: "
-                f"{task.get('is_active', True)}"
             )
 
         return
@@ -2249,18 +2053,22 @@ async def admin_callback(update, context):
         if not tasks:
 
             await query.message.reply_text(
-                "❌ No tasks."
+                t(
+                    user_id,
+                    "no_tasks_admin",
+                )
             )
 
             return
 
-        text = "🗑 DELETE TASK\n\n"
+        text = "🗑 কাজ মুছুন\n\n"
 
         for task in tasks:
 
             text += (
                 f"🆔 {task.get('id')}\n"
-                f"📌 {task.get('title', '')}\n\n"
+                f"📌 {task.get('title', '')}\n"
+                f"💰 {float(task.get('reward', 0)):.2f} BDT\n\n"
             )
 
         context.user_data[
@@ -2269,8 +2077,10 @@ async def admin_callback(update, context):
 
         await query.message.reply_text(
             text +
-            "Send Task ID to delete:",
-            reply_markup=admin_cancel_keyboard(),
+            "🆔 যে Task ID মুছতে চান সেটি পাঠান:",
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -2283,7 +2093,6 @@ async def admin_callback(update, context):
             {
                 "status":
                     "eq.pending",
-
                 "order":
                     "id.asc",
             },
@@ -2292,7 +2101,10 @@ async def admin_callback(update, context):
         if not pending:
 
             await query.message.reply_text(
-                "📥 No pending submissions."
+                t(
+                    user_id,
+                    "no_pending",
+                )
             )
 
             return
@@ -2313,32 +2125,27 @@ async def admin_callback(update, context):
                 f"{submission.get('task_id')}\n"
 
                 f"💰 Reward: "
-                f"{float(submission.get('reward', 0)):.2f} BDT\n"
-
-                f"🆔 UID: "
-                f"{submission.get('facebook_uid', '')}\n\n"
+                f"{float(submission.get('reward', 0)):.2f} BDT\n\n"
 
                 f"📄 Report:\n"
                 f"{submission.get('written_report', '')}",
 
-                reply_markup=
-                InlineKeyboardMarkup([
-
+                reply_markup=InlineKeyboardMarkup(
                     [
-                        InlineKeyboardButton(
-                            "✅ Approve",
-                            callback_data=
-                            f"approve_{submission['id']}",
-                        ),
-
-                        InlineKeyboardButton(
-                            "❌ Reject",
-                            callback_data=
-                            f"reject_{submission['id']}",
-                        ),
+                        [
+                            InlineKeyboardButton(
+                                "✅ Approve",
+                                callback_data=
+                                f"approve_{submission['id']}",
+                            ),
+                            InlineKeyboardButton(
+                                "❌ Reject",
+                                callback_data=
+                                f"reject_{submission['id']}",
+                            ),
+                        ]
                     ]
-
-                ]),
+                ),
             )
 
         return
@@ -2351,7 +2158,6 @@ async def admin_callback(update, context):
             {
                 "select":
                     "id,first_name,username,balance",
-
                 "order":
                     "id.asc",
             },
@@ -2360,32 +2166,27 @@ async def admin_callback(update, context):
         if not users:
 
             await query.message.reply_text(
-                "👥 No users."
+                t(
+                    user_id,
+                    "no_users_admin",
+                )
             )
 
             return
 
         text = (
-            "👥 USERS\n\n"
-            f"Total Users: "
-            f"{len(users)}\n\n"
+            "👥 ব্যবহারকারী\n\n"
+            f"মোট: {len(users)}\n\n"
         )
 
         for user in users[:50]:
 
             text += (
 
-                f"🆔 "
-                f"{user.get('id')}\n"
-
-                f"👤 "
-                f"{user.get('first_name') or 'User'}\n"
-
-                f"@"
-                f"{user.get('username') or 'None'}\n"
-
-                f"💰 "
-                f"{float(user.get('balance', 0)):.2f} BDT\n\n"
+                f"🆔 {user.get('id')}\n"
+                f"👤 {user.get('first_name') or 'User'}\n"
+                f"@{user.get('username') or 'None'}\n"
+                f"💰 {float(user.get('balance', 0)):.2f} BDT\n\n"
             )
 
         await query.message.reply_text(
@@ -2402,13 +2203,13 @@ async def admin_callback(update, context):
         ] = "add_balance"
 
         await query.message.reply_text(
-            "💰 ADD BALANCE\n\n"
-            "Format:\n"
-            "USER_ID | AMOUNT\n\n"
-            "Example:\n"
-            "7764329763 | 100",
-
-            reply_markup=admin_cancel_keyboard(),
+            t(
+                user_id,
+                "add_balance_format",
+            ),
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -2421,11 +2222,13 @@ async def admin_callback(update, context):
         ] = "remove_balance"
 
         await query.message.reply_text(
-            "➖ REMOVE BALANCE\n\n"
-            "Format:\n"
-            "USER_ID | AMOUNT",
-
-            reply_markup=admin_cancel_keyboard(),
+            t(
+                user_id,
+                "remove_balance_format",
+            ),
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return
@@ -2438,7 +2241,6 @@ async def admin_callback(update, context):
             {
                 "status":
                     "eq.pending",
-
                 "order":
                     "id.asc",
             },
@@ -2447,7 +2249,10 @@ async def admin_callback(update, context):
         if not pending:
 
             await query.message.reply_text(
-                "📤 No pending withdrawals."
+                t(
+                    user_id,
+                    "no_withdrawals",
+                )
             )
 
             return
@@ -2473,31 +2278,29 @@ async def admin_callback(update, context):
                 f"🏦 Account: "
                 f"{withdrawal.get('account_number', '')}",
 
-                reply_markup=
-                InlineKeyboardMarkup([
-
+                reply_markup=InlineKeyboardMarkup(
                     [
-                        InlineKeyboardButton(
-                            "✅ Approve",
-                            callback_data=
-                            f"approve_withdraw_{withdrawal['id']}",
-                        ),
-
-                        InlineKeyboardButton(
-                            "❌ Reject",
-                            callback_data=
-                            f"reject_withdraw_{withdrawal['id']}",
-                        ),
+                        [
+                            InlineKeyboardButton(
+                                "✅ Approve",
+                                callback_data=
+                                f"approve_withdraw_{withdrawal['id']}",
+                            ),
+                            InlineKeyboardButton(
+                                "❌ Reject",
+                                callback_data=
+                                f"reject_withdraw_{withdrawal['id']}",
+                            ),
+                        ]
                     ]
-
-                ]),
+                ),
             )
 
         return
 
 
 # =========================================================
-# ADMIN TEXT
+# ADMIN TEXT FLOW
 # =========================================================
 
 async def process_admin_text(update, context):
@@ -2517,8 +2320,21 @@ async def process_admin_text(update, context):
 
     text = update.message.text.strip()
 
+    user_id = update.effective_user.id
+
     # TITLE
     if state == "task_title":
+
+        if not text:
+
+            await update.message.reply_text(
+                "❌ Title খালি রাখা যাবে না।",
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
+            )
+
+            return True
 
         context.user_data[
             "new_task_title"
@@ -2529,11 +2345,13 @@ async def process_admin_text(update, context):
         ] = "task_reward"
 
         await update.message.reply_text(
-            "💵 Send Reward in BDT:\n\n"
-            "Example:\n"
-            "10\n"
-            "25.50",
-            reply_markup=admin_cancel_keyboard(),
+            t(
+                user_id,
+                "send_reward",
+            ),
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return True
@@ -2551,9 +2369,13 @@ async def process_admin_text(update, context):
         except Exception:
 
             await update.message.reply_text(
-                "❌ Invalid Reward.\n\n"
-                "Example: 5.80",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "invalid_reward",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
             return True
@@ -2567,10 +2389,13 @@ async def process_admin_text(update, context):
         ] = "task_review"
 
         await update.message.reply_text(
-            "⏳ Send Review Time in hours:\n\n"
-            "Example:\n"
-            "12",
-            reply_markup=admin_cancel_keyboard(),
+            t(
+                user_id,
+                "send_review",
+            ),
+            reply_markup=admin_cancel_keyboard(
+                user_id
+            ),
         )
 
         return True
@@ -2595,95 +2420,16 @@ async def process_admin_text(update, context):
         except Exception:
 
             await update.message.reply_text(
-                "❌ Invalid Review Hours.\n\n"
-                "Please send whole number.\n\n"
-                "Example: 12",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "invalid_review",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
             return True
-
-        context.user_data[
-            "new_task_review"
-        ] = review_hours
-
-        context.user_data[
-            "admin_state"
-        ] = "task_description"
-
-        await update.message.reply_text(
-            "📄 Send Task Description:",
-            reply_markup=admin_cancel_keyboard(),
-        )
-
-        return True
-
-    # DESCRIPTION
-    if state == "task_description":
-
-        context.user_data[
-            "new_task_description"
-        ] = text
-
-        context.user_data[
-            "admin_state"
-        ] = "task_uid"
-
-        await update.message.reply_text(
-            "🆔 UID Requirement:\n\n"
-            "Send YES if UID is required.\n"
-            "Send NO if UID is not required.",
-            reply_markup=admin_cancel_keyboard(),
-        )
-
-        return True
-
-    # UID
-    if state == "task_uid":
-
-        value = text.lower()
-
-        if value not in (
-            "yes",
-            "no",
-            "হ্যাঁ",
-            "না",
-        ):
-
-            await update.message.reply_text(
-                "❌ Please send YES or NO.",
-                reply_markup=admin_cancel_keyboard(),
-            )
-
-            return True
-
-        uid_value = (
-            "yes"
-            if value in (
-                "yes",
-                "হ্যাঁ",
-            )
-            else
-            "no"
-        )
-
-        context.user_data[
-            "new_task_uid"
-        ] = uid_value
-
-        context.user_data[
-            "admin_state"
-        ] = "task_report"
-
-        await update.message.reply_text(
-            "✍️ Send Report Instruction:",
-            reply_markup=admin_cancel_keyboard(),
-        )
-
-        return True
-
-    # REPORT + SAVE
-    if state == "task_report":
 
         title = context.user_data.get(
             "new_task_title",
@@ -2695,50 +2441,30 @@ async def process_admin_text(update, context):
             0,
         )
 
-        review_hours = context.user_data.get(
-            "new_task_review",
-            0,
-        )
-
-        description = context.user_data.get(
-            "new_task_description",
-            "",
-        )
-
-        uid_value = context.user_data.get(
-            "new_task_uid",
-            "no",
-        )
+        # =================================================
+        # IMPORTANT:
+        # tasks table-এর নিশ্চিত column:
+        # id, title, reward, review_hours
+        #
+        # তাই অন্য কোনো column পাঠানো হচ্ছে না।
+        # =================================================
 
         data = {
-
-            "title":
-                title,
-
-            "reward":
-                float(reward),
-
-            "review_hours":
-                int(review_hours),
-
-            "description":
-                description,
-
-            "uid":
-                uid_value,
-
-            "report_instruction":
-                text,
-
-            "is_active":
-                True,
-
-            "created_at":
-                datetime.now().isoformat(),
+            "title": title,
+            "reward": float(reward),
+            "review_hours": review_hours,
         }
 
         logger.info(
-            "Trying to save task: %s",
+            "========================================"
+        )
+
+        logger.info(
+            "TRYING TO SAVE TASK"
+        )
+
+        logger.info(
+            "TASK DATA: %s",
             data,
         )
 
@@ -2750,18 +2476,19 @@ async def process_admin_text(update, context):
         if not result:
 
             logger.error(
-                "TASK SAVE FAILED. DATA=%s",
-                data,
+                "TASK SAVE FAILED"
             )
 
             context.user_data.clear()
 
             await update.message.reply_text(
-                "❌ Task save হয়নি।\n\n"
-                "Supabase database error হয়েছে।\n"
-                "Render Logs দেখুন।",
-
-                reply_markup=admin_keyboard(),
+                t(
+                    user_id,
+                    "task_save_failed",
+                ),
+                reply_markup=admin_keyboard(
+                    user_id
+                ),
             )
 
             return True
@@ -2772,24 +2499,23 @@ async def process_admin_text(update, context):
 
         await update.message.reply_text(
 
-            "✅ TASK ADDED SUCCESSFULLY!\n\n"
+            "✅ কাজ সফলভাবে যোগ হয়েছে!\n\n"
 
             f"🆔 Task ID: "
             f"{task.get('id')}\n"
 
-            f"📌 Task: "
+            f"📌 কাজ: "
             f"{task.get('title', '')}\n"
 
             f"💰 Reward: "
             f"{float(task.get('reward', 0)):.2f} BDT\n"
 
             f"⏳ Review: "
-            f"{int(task.get('review_hours', 0))} hours\n"
+            f"{int(task.get('review_hours', 0))} ঘণ্টা",
 
-            f"🆔 UID: "
-            f"{task.get('uid', '')}",
-
-            reply_markup=admin_keyboard(),
+            reply_markup=admin_keyboard(
+                user_id
+            ),
         )
 
         return True
@@ -2804,8 +2530,13 @@ async def process_admin_text(update, context):
         except Exception:
 
             await update.message.reply_text(
-                "❌ Invalid Task ID.",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "invalid_task_id",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
             return True
@@ -2815,8 +2546,13 @@ async def process_admin_text(update, context):
         if not task:
 
             await update.message.reply_text(
-                "❌ Task ID not found.",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "task_id_not_found",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
             return True
@@ -2833,7 +2569,9 @@ async def process_admin_text(update, context):
 
             await update.message.reply_text(
                 "❌ Task delete হয়নি।",
-                reply_markup=admin_cancel_keyboard(),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
             return True
@@ -2843,7 +2581,9 @@ async def process_admin_text(update, context):
         await update.message.reply_text(
             "✅ Task Deleted\n\n"
             f"📌 {task.get('title', '')}",
-            reply_markup=admin_keyboard(),
+            reply_markup=admin_keyboard(
+                user_id
+            ),
         )
 
         return True
@@ -2853,24 +2593,27 @@ async def process_admin_text(update, context):
 
         try:
 
-            user_id, amount = text.split(
+            parts = text.split(
                 "|",
                 1,
             )
 
-            user_id = int(
-                user_id.strip()
+            if len(parts) != 2:
+                raise ValueError
+
+            target_user_id = int(
+                parts[0].strip()
             )
 
             amount = float(
-                amount.strip()
+                parts[1].strip()
             )
 
             if amount <= 0:
                 raise ValueError
 
             user = get_user_by_id(
-                user_id
+                target_user_id
             )
 
             if not user:
@@ -2885,7 +2628,7 @@ async def process_admin_text(update, context):
             )
 
             updated = update_user(
-                user_id,
+                target_user_id,
                 {
                     "balance":
                         new_balance
@@ -2899,26 +2642,32 @@ async def process_admin_text(update, context):
 
             await update.message.reply_text(
 
-                "✅ Balance Added\n\n"
+                "✅ ব্যালেন্স যোগ করা হয়েছে\n\n"
 
                 f"👤 User: "
-                f"{user_id}\n"
+                f"{target_user_id}\n"
 
-                f"➕ Added: "
+                f"➕ যোগ: "
                 f"{amount:.2f} BDT\n"
 
-                f"💵 New Balance: "
+                f"💵 নতুন ব্যালেন্স: "
                 f"{new_balance:.2f} BDT",
 
-                reply_markup=admin_keyboard(),
+                reply_markup=admin_keyboard(
+                    user_id
+                ),
             )
 
         except Exception:
 
             await update.message.reply_text(
-                "❌ Wrong Format.\n\n"
-                "USER_ID | AMOUNT",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "wrong_format",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
         return True
@@ -2928,24 +2677,27 @@ async def process_admin_text(update, context):
 
         try:
 
-            user_id, amount = text.split(
+            parts = text.split(
                 "|",
                 1,
             )
 
-            user_id = int(
-                user_id.strip()
+            if len(parts) != 2:
+                raise ValueError
+
+            target_user_id = int(
+                parts[0].strip()
             )
 
             amount = float(
-                amount.strip()
+                parts[1].strip()
             )
 
             if amount <= 0:
                 raise ValueError
 
             user = get_user_by_id(
-                user_id
+                target_user_id
             )
 
             if not user:
@@ -2955,13 +2707,15 @@ async def process_admin_text(update, context):
                 user.get("balance", 0)
             )
 
-            new_balance = max(
-                0,
-                current - amount,
+            if amount > current:
+                raise ValueError
+
+            new_balance = (
+                current - amount
             )
 
             updated = update_user(
-                user_id,
+                target_user_id,
                 {
                     "balance":
                         new_balance
@@ -2975,26 +2729,32 @@ async def process_admin_text(update, context):
 
             await update.message.reply_text(
 
-                "✅ Balance Removed\n\n"
+                "✅ ব্যালেন্স কমানো হয়েছে\n\n"
 
                 f"👤 User: "
-                f"{user_id}\n"
+                f"{target_user_id}\n"
 
-                f"➖ Removed: "
+                f"➖ কমানো: "
                 f"{amount:.2f} BDT\n"
 
-                f"💵 Balance: "
+                f"💵 নতুন ব্যালেন্স: "
                 f"{new_balance:.2f} BDT",
 
-                reply_markup=admin_keyboard(),
+                reply_markup=admin_keyboard(
+                    user_id
+                ),
             )
 
         except Exception:
 
             await update.message.reply_text(
-                "❌ Wrong Format.\n\n"
-                "USER_ID | AMOUNT",
-                reply_markup=admin_cancel_keyboard(),
+                t(
+                    user_id,
+                    "wrong_format",
+                ),
+                reply_markup=admin_cancel_keyboard(
+                    user_id
+                ),
             )
 
         return True
@@ -3071,6 +2831,7 @@ async def process_withdraw(update, context):
 
     text = update.message.text.strip()
 
+    # AMOUNT
     if step == "amount":
 
         try:
@@ -3138,7 +2899,19 @@ async def process_withdraw(update, context):
 
         return True
 
+    # METHOD
     if step == "method":
+
+        if not text:
+
+            await update.message.reply_text(
+                "❌ মাধ্যম খালি রাখা যাবে না।",
+                reply_markup=cancel_keyboard(
+                    user_id
+                ),
+            )
+
+            return True
 
         context.user_data[
             "withdraw_method"
@@ -3160,9 +2933,21 @@ async def process_withdraw(update, context):
 
         return True
 
+    # ACCOUNT
     if step == "account":
 
         account_number = text
+
+        if not account_number:
+
+            await update.message.reply_text(
+                "❌ অ্যাকাউন্ট নম্বর খালি রাখা যাবে না।",
+                reply_markup=cancel_keyboard(
+                    user_id
+                ),
+            )
+
+            return True
 
         amount = float(
             context.user_data[
@@ -3198,12 +2983,8 @@ async def process_withdraw(update, context):
 
             return True
 
-        new_balance = (
-            balance_value - amount
-        )
-
+        # প্রথমে withdrawal create
         data = {
-
             "user_id":
                 user["id"],
 
@@ -3242,6 +3023,13 @@ async def process_withdraw(update, context):
 
             return True
 
+        withdrawal = result[0]
+
+        # Balance কমানো
+        new_balance = (
+            balance_value - amount
+        )
+
         updated = update_user(
             user["id"],
             {
@@ -3252,13 +3040,12 @@ async def process_withdraw(update, context):
 
         if not updated:
 
-            withdrawal_id = result[0]["id"]
-
+            # Withdrawal rollback
             sb_delete(
                 "withdrawals",
                 {
                     "id":
-                        f"eq.{withdrawal_id}"
+                        f"eq.{withdrawal['id']}"
                 },
             )
 
@@ -3273,8 +3060,6 @@ async def process_withdraw(update, context):
             )
 
             return True
-
-        withdrawal = result[0]
 
         context.user_data.clear()
 
@@ -3299,6 +3084,7 @@ async def process_withdraw(update, context):
             ),
         )
 
+        # Admin notification
         try:
 
             await context.bot.send_message(
@@ -3325,24 +3111,22 @@ async def process_withdraw(update, context):
                     f"{account_number}"
                 ),
 
-                reply_markup=
-                InlineKeyboardMarkup([
-
+                reply_markup=InlineKeyboardMarkup(
                     [
-                        InlineKeyboardButton(
-                            "✅ Approve",
-                            callback_data=
-                            f"approve_withdraw_{withdrawal['id']}",
-                        ),
-
-                        InlineKeyboardButton(
-                            "❌ Reject",
-                            callback_data=
-                            f"reject_withdraw_{withdrawal['id']}",
-                        ),
+                        [
+                            InlineKeyboardButton(
+                                "✅ Approve",
+                                callback_data=
+                                f"approve_withdraw_{withdrawal['id']}",
+                            ),
+                            InlineKeyboardButton(
+                                "❌ Reject",
+                                callback_data=
+                                f"reject_withdraw_{withdrawal['id']}",
+                            ),
+                        ]
                     ]
-
-                ]),
+                ),
             )
 
         except Exception:
@@ -3399,7 +3183,6 @@ async def review_withdrawal(update, context):
         {
             "id":
                 f"eq.{withdrawal_id}",
-
             "limit":
                 "1",
         },
@@ -3434,17 +3217,15 @@ async def review_withdrawal(update, context):
         )
     )
 
+    # APPROVED
     if action == "approved":
 
         updated = sb_patch(
-
             "withdrawals",
-
             {
                 "id":
                     f"eq.{withdrawal_id}"
             },
-
             {
                 "status":
                     "approved",
@@ -3454,9 +3235,6 @@ async def review_withdrawal(update, context):
 
                 "reviewed_by":
                     ADMIN_ID,
-
-                "approved_at":
-                    datetime.now().isoformat(),
             },
         )
 
@@ -3528,17 +3306,15 @@ async def review_withdrawal(update, context):
                 "Withdrawal approval notification error"
             )
 
+    # REJECTED
     else:
 
         updated = sb_patch(
-
             "withdrawals",
-
             {
                 "id":
                     f"eq.{withdrawal_id}"
             },
-
             {
                 "status":
                     "rejected",
@@ -3627,7 +3403,7 @@ async def review_withdrawal(update, context):
 
 
 # =========================================================
-# TOP
+# TOP USERS
 # =========================================================
 
 async def top_users(update, context):
@@ -3701,22 +3477,26 @@ async def language(update, context):
         f"{t(user_id, 'language_title')}\n\n"
         f"{t(user_id, 'select_language')}",
 
-        reply_markup=
-        InlineKeyboardMarkup([
-
+        reply_markup=InlineKeyboardMarkup(
             [
-                InlineKeyboardButton(
-                    "🇧🇩 বাংলা",
-                    callback_data="lang_bn",
-                ),
-
-                InlineKeyboardButton(
-                    "🇬🇧 English",
-                    callback_data="lang_en",
-                ),
+                [
+                    InlineKeyboardButton(
+                        "🇧🇩 বাংলা",
+                        callback_data="lang_bn",
+                    ),
+                    InlineKeyboardButton(
+                        "🇬🇧 English",
+                        callback_data="lang_en",
+                    ),
+                ],
+                [
+                    InlineKeyboardButton(
+                        t(user_id, "cancel"),
+                        callback_data="global_cancel",
+                    )
+                ],
             ]
-
-        ]),
+        ),
     )
 
 
@@ -3726,10 +3506,12 @@ async def language_callback(update, context):
 
     await query.answer()
 
+    user_id = query.from_user.id
+
     if query.data == "lang_bn":
 
         update_user(
-            query.from_user.id,
+            user_id,
             {
                 "language":
                     "bn"
@@ -3737,20 +3519,16 @@ async def language_callback(update, context):
         )
 
         await query.message.reply_text(
-
-            TEXTS["bn"][
-                "bangla_selected"
-            ],
-
+            TEXTS["bn"]["bangla_selected"],
             reply_markup=main_keyboard(
-                query.from_user.id
+                user_id
             ),
         )
 
     elif query.data == "lang_en":
 
         update_user(
-            query.from_user.id,
+            user_id,
             {
                 "language":
                     "en"
@@ -3758,13 +3536,9 @@ async def language_callback(update, context):
         )
 
         await query.message.reply_text(
-
-            TEXTS["en"][
-                "english_selected"
-            ],
-
+            TEXTS["en"]["english_selected"],
             reply_markup=main_keyboard(
-                query.from_user.id
+                user_id
             ),
         )
 
@@ -3808,14 +3582,7 @@ async def text_handler(update, context):
 
     text = update.message.text
 
-    language = get_language(
-        user_id
-    )
-
-    # -----------------------------
-    # BANGLA
-    # -----------------------------
-
+    # Main buttons
     if text in (
         "💸 ব্যালেন্স",
         "💸 Balance",
@@ -3858,6 +3625,7 @@ async def text_handler(update, context):
 
     elif text in (
         "🏆 সেরা ব্যবহারকারী",
+        "🏆 Top Users",
         "🏆 Top",
     ):
 
@@ -3900,7 +3668,9 @@ async def text_handler(update, context):
                 f"{t(user_id, 'admin_title')}\n\n"
                 f"{t(user_id, 'admin_select')}",
 
-                reply_markup=admin_keyboard(),
+                reply_markup=admin_keyboard(
+                    user_id
+                ),
             )
 
         else:
@@ -3928,7 +3698,7 @@ async def text_handler(update, context):
 
 
 # =========================================================
-# ERROR
+# ERROR HANDLER
 # =========================================================
 
 async def error_handler(update, context):
@@ -3948,17 +3718,21 @@ async def post_init(application):
 
     try:
 
-        await application.bot.set_my_commands([
-
-            BotCommand(
-                "start",
-                "Start the bot",
-            ),
-
-        ])
+        await application.bot.set_my_commands(
+            [
+                BotCommand(
+                    "start",
+                    "Start the bot",
+                ),
+                BotCommand(
+                    "admin",
+                    "Admin Panel",
+                ),
+            ]
+        )
 
         logger.info(
-            "Telegram Start menu configured."
+            "Telegram commands configured."
         )
 
     except Exception:
@@ -3975,11 +3749,9 @@ async def post_init(application):
 def main():
 
     logger.info("=" * 60)
-
     logger.info(
         "Starting Success Income Zone Bot"
     )
-
     logger.info("=" * 60)
 
     if not BOT_TOKEN:
@@ -4023,7 +3795,7 @@ def main():
 
     health_thread.start()
 
-    # TELEGRAM
+    # TELEGRAM APPLICATION
     application = (
         Application.builder()
         .token(BOT_TOKEN)
@@ -4061,18 +3833,18 @@ def main():
     )
 
     # =====================================================
-    # ADMIN CANCEL
+    # ADMIN CALLBACK
     # =====================================================
 
     application.add_handler(
         CallbackQueryHandler(
             admin_callback,
-            pattern=r"^admin_cancel$",
+            pattern=r"^admin_",
         )
     )
 
     # =====================================================
-    # TASK CALLBACKS
+    # TASK SELECT
     # =====================================================
 
     application.add_handler(
@@ -4082,6 +3854,10 @@ def main():
         )
     )
 
+    # =====================================================
+    # TASK START
+    # =====================================================
+
     application.add_handler(
         CallbackQueryHandler(
             start_task,
@@ -4089,21 +3865,14 @@ def main():
         )
     )
 
+    # =====================================================
+    # SUBMISSION CONFIRM
+    # =====================================================
+
     application.add_handler(
         CallbackQueryHandler(
             confirm_submission,
             pattern=r"^confirm_submission$",
-        )
-    )
-
-    # =====================================================
-    # ADMIN
-    # =====================================================
-
-    application.add_handler(
-        CallbackQueryHandler(
-            admin_callback,
-            pattern=r"^admin_",
         )
     )
 
@@ -4119,7 +3888,7 @@ def main():
     )
 
     # =====================================================
-    # WITHDRAW
+    # WITHDRAW APPROVE / REJECT
     # =====================================================
 
     application.add_handler(
